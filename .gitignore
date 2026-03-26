@@ -1,0 +1,9 @@
+node_modules/
+dist/
+data/*.db
+.env
+*.local
+.DS_Store
+_bmad/
+_bmad-output/
+ralph-loop.md

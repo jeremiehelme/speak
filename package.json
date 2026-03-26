@@ -1,0 +1,18 @@
+{
+  "name": "speak",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run dev:client\" \"npm run dev:server\"",
+    "dev:client": "cd client && npm run dev",
+    "dev:server": "cd server && npx tsx watch src/index.ts",
+    "build": "cd client && npm run build",
+    "start": "cd server && node dist/index.js",
+    "test": "cd server && npx vitest run && cd ../client && npx vitest run",
+    "test:server": "cd server && npx vitest run",
+    "test:client": "cd client && npx vitest run"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
