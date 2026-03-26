@@ -1,0 +1,13 @@
+services:
+  speak:
+    build: .
+    ports:
+      - "${PORT:-3000}:3000"
+    volumes:
+      - ./data:/app/data
+      - ./prompts:/app/prompts
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - APP_URL=${APP_URL:-http://localhost:3000}
+      - PORT=3000
+    restart: unless-stopped
