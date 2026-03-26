@@ -10,6 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.80.0",
     "@mozilla/readability": "^0.6.0",
     "better-sqlite3": "^12.8.0",
     "cheerio": "^1.2.0",
