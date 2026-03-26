@@ -13,8 +13,18 @@ export function createCaptureRouter(db: Kysely<Database>): Router {
   const analysisService = new AnalysisService(db, settingsService);
 
   // POST /api/capture — capture a source (from web app or bookmarklet)
+  // When token query param is present, validate it (bookmarklet auth)
   router.post('/', async (req, res, next) => {
     try {
+      const token = req.query['token'] as string | undefined;
+      if (token) {
+        const storedToken = await settingsService.get('api_token');
+        if (!storedToken || token !== storedToken) {
+          res.status(401).json({ error: { code: 'INVALID_TOKEN', message: 'Invalid token' } });
+          return;
+        }
+      }
+
       const { url, text, opinion } = req.body as {
         url?: string;
         text?: string;
