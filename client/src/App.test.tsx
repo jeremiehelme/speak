@@ -10,6 +10,6 @@ describe('App', () => {
 
   it('should render the dashboard page by default', () => {
     render(<App />);
-    expect(screen.getByText('Dashboard')).toBeDefined();
+    expect(screen.getByRole('heading', { name: 'Dashboard' })).toBeDefined();
   });
 });

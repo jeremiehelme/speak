@@ -4,6 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { initDatabase } from './db/database.js';
 import { errorHandler } from './middleware/error-handler.js';
+import { createSettingsRouter } from './routes/settings-route.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -22,16 +23,20 @@ app.get('/api/health', (_req, res) => {
   res.json({ data: { status: 'ok' } });
 });
 
-// SPA fallback for production
-app.get('*', (_req, res) => {
-  res.sendFile(path.join(clientDist, 'index.html'));
-});
-
-// Error handler
-app.use(errorHandler);
-
 async function start(): Promise<void> {
-  await initDatabase();
+  const db = await initDatabase();
+
+  // Mount routes
+  app.use('/api/settings', createSettingsRouter(db));
+
+  // SPA fallback for production
+  app.get('*', (_req, res) => {
+    res.sendFile(path.join(clientDist, 'index.html'));
+  });
+
+  // Error handler
+  app.use(errorHandler);
+
   app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
   });
