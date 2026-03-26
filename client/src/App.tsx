@@ -6,6 +6,7 @@ import DashboardPage from './pages/DashboardPage';
 import SettingsPage from './pages/SettingsPage';
 import ProfilePage from './pages/ProfilePage';
 import OnboardingPage from './pages/OnboardingPage';
+import CapturePage from './pages/CapturePage';
 
 const queryClient = new QueryClient();
 
@@ -33,6 +34,7 @@ function AppRoutes() {
         <Route path="/" element={<DashboardPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/capture" element={<CapturePage />} />
         <Route path="/onboarding" element={<OnboardingPage />} />
       </Routes>
     </OnboardingGuard>
@@ -49,6 +51,7 @@ function App() {
               <a href="/" className="text-xl font-bold text-gray-900">Speak</a>
               <div className="flex gap-4">
                 <a href="/" className="text-sm text-gray-600 hover:text-gray-900">Dashboard</a>
+                <a href="/capture" className="text-sm text-gray-600 hover:text-gray-900">Capture</a>
                 <a href="/profile" className="text-sm text-gray-600 hover:text-gray-900">Profile</a>
                 <a href="/settings" className="text-sm text-gray-600 hover:text-gray-900">Settings</a>
               </div>
