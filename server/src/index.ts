@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { initDatabase } from './db/database.js';
 import { errorHandler } from './middleware/error-handler.js';
 import { createSettingsRouter } from './routes/settings-route.js';
+import { createProfileRouter } from './routes/profile-route.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -28,6 +29,7 @@ async function start(): Promise<void> {
 
   // Mount routes
   app.use('/api/settings', createSettingsRouter(db));
+  app.use('/api/profile', createProfileRouter(db));
 
   // SPA fallback for production
   app.get('*', (_req, res) => {

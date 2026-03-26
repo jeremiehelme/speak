@@ -16,7 +16,7 @@ describe('Database', () => {
   });
 
   it('should create database and run migrations', async () => {
-    dbPath = path.join(os.tmpdir(), `speak-test-${Date.now()}.db`);
+    dbPath = path.join(os.tmpdir(), `speak-test-${Date.now()}-${Math.random().toString(36).slice(2)}.db`);
     db = createDatabase(dbPath);
     await migrateDatabase(db);
 
@@ -33,7 +33,7 @@ describe('Database', () => {
   });
 
   it('should create all four tables', async () => {
-    dbPath = path.join(os.tmpdir(), `speak-test-${Date.now()}.db`);
+    dbPath = path.join(os.tmpdir(), `speak-test-${Date.now()}-${Math.random().toString(36).slice(2)}.db`);
     db = createDatabase(dbPath);
     await migrateDatabase(db);
 
@@ -56,7 +56,7 @@ describe('Database', () => {
   });
 
   it('should cascade delete drafts when source is deleted', async () => {
-    dbPath = path.join(os.tmpdir(), `speak-test-${Date.now()}.db`);
+    dbPath = path.join(os.tmpdir(), `speak-test-${Date.now()}-${Math.random().toString(36).slice(2)}.db`);
     db = createDatabase(dbPath);
     await migrateDatabase(db);
 
