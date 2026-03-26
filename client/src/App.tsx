@@ -24,6 +24,9 @@ function OnboardingGuard({ children }: { children: React.ReactNode }) {
   if (needsOnboarding && location.pathname !== '/onboarding') {
     return <Navigate to="/onboarding" replace />;
   }
+  if (!needsOnboarding && location.pathname === '/onboarding') {
+    return <Navigate to="/" replace />;
+  }
 
   return <>{children}</>;
 }

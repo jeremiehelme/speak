@@ -1,3 +1,4 @@
+import dotenv from 'dotenv';
 import express from 'express';
 import cors from 'cors';
 import path from 'node:path';
@@ -12,6 +13,8 @@ import { createDraftsRouter } from './routes/drafts-route.js';
 import { createSourcesRouter } from './routes/sources-route.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 const app = express();
 const PORT = parseInt(process.env['PORT'] ?? '3001', 10);
@@ -40,7 +43,7 @@ async function start(): Promise<void> {
   app.use('/api', createDraftsRouter(db));
 
   // SPA fallback for production
-  app.get('*', (_req, res) => {
+  app.get('/{*path}', (_req, res) => {
     res.sendFile(path.join(clientDist, 'index.html'));
   });
 
