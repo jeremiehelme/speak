@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiGet, apiPost, apiDelete } from '../lib/api-client';
+import { useRef, useEffect } from 'react';
 
 export interface Source {
   id: number;
@@ -29,10 +30,27 @@ export function useSources(search?: string) {
 }
 
 export function useSource(id: string | undefined) {
-  return useQuery<Source>({
+  const query = useQuery<Source>({
     queryKey: ['source', id],
     queryFn: () => apiGet<Source>(`/sources/${id}`),
     enabled: !!id,
+    refetchInterval: (query) => {
+      const status = query.state.data?.analysis_status;
+      return status === 'pending' ? 2000 : false;
+    },
+  });
+  return query;
+}
+
+export function useRetryAnalysis() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (sourceId: number) =>
+      apiPost<Source>(`/sources/${sourceId}/retry-analysis`, {}),
+    onSuccess: (_data, sourceId) => {
+      queryClient.invalidateQueries({ queryKey: ['source', String(sourceId)] });
+      queryClient.invalidateQueries({ queryKey: ['sources'] });
+    },
   });
 }
 

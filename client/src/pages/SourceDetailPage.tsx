@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useSource, useGenerateAngles, useDeleteSource, type Angle } from '../hooks/use-sources';
+import { useSource, useGenerateAngles, useDeleteSource, useRetryAnalysis, type Angle } from '../hooks/use-sources';
 import { useGenerateDraft, useUpdateDraft, useRegenerateDraft, type Draft } from '../hooks/use-drafts';
 
 function SourceDetailPage() {
@@ -12,6 +12,7 @@ function SourceDetailPage() {
   const updateDraft = useUpdateDraft();
   const regenerateDraft = useRegenerateDraft();
   const deleteSource = useDeleteSource();
+  const retryAnalysis = useRetryAnalysis();
 
   const [angles, setAngles] = useState<Angle[]>([]);
   const [selectedAngle, setSelectedAngle] = useState<string | null>(null);
@@ -142,8 +143,15 @@ function SourceDetailPage() {
           Analyzing article...
         </div>
       ) : (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700">
-          Analysis failed. The source was saved but could not be analyzed.
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700 flex items-center justify-between">
+          <span>Analysis failed. The source was saved but could not be analyzed.</span>
+          <button
+            onClick={() => retryAnalysis.mutate(source.id)}
+            disabled={retryAnalysis.isPending}
+            className="px-3 py-1 bg-red-600 text-white rounded-md text-sm hover:bg-red-700 disabled:opacity-50"
+          >
+            {retryAnalysis.isPending ? 'Retrying...' : 'Retry'}
+          </button>
         </div>
       )}
 
