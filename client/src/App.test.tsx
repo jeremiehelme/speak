@@ -8,8 +8,14 @@ describe('App', () => {
     expect(screen.getByText('Speak')).toBeDefined();
   });
 
-  it('should render the dashboard page by default', () => {
+  it('should render navigation links', () => {
     render(<App />);
-    expect(screen.getByRole('heading', { name: 'Dashboard' })).toBeDefined();
+    expect(screen.getByText('Settings')).toBeDefined();
+    expect(screen.getByText('Profile')).toBeDefined();
+  });
+
+  it('should show loading state initially', () => {
+    render(<App />);
+    expect(screen.getByText('Loading...')).toBeDefined();
   });
 });

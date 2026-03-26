@@ -1,10 +1,43 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useSettings } from './hooks/use-settings';
+import { useProfile } from './hooks/use-profile';
 import DashboardPage from './pages/DashboardPage';
 import SettingsPage from './pages/SettingsPage';
 import ProfilePage from './pages/ProfilePage';
+import OnboardingPage from './pages/OnboardingPage';
 
 const queryClient = new QueryClient();
+
+function OnboardingGuard({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
+  const { data: settings, isLoading: settingsLoading } = useSettings();
+  const { data: profile, isLoading: profileLoading } = useProfile();
+
+  if (settingsLoading || profileLoading) {
+    return <div className="text-gray-500 p-8">Loading...</div>;
+  }
+
+  const needsOnboarding = !settings?.hasApiKey && !profile;
+  if (needsOnboarding && location.pathname !== '/onboarding') {
+    return <Navigate to="/onboarding" replace />;
+  }
+
+  return <>{children}</>;
+}
+
+function AppRoutes() {
+  return (
+    <OnboardingGuard>
+      <Routes>
+        <Route path="/" element={<DashboardPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/onboarding" element={<OnboardingPage />} />
+      </Routes>
+    </OnboardingGuard>
+  );
+}
 
 function App() {
   return (
@@ -22,11 +55,7 @@ function App() {
             </div>
           </nav>
           <main className="max-w-5xl mx-auto px-4 py-6">
-            <Routes>
-              <Route path="/" element={<DashboardPage />} />
-              <Route path="/profile" element={<ProfilePage />} />
-              <Route path="/settings" element={<SettingsPage />} />
-            </Routes>
+            <AppRoutes />
           </main>
         </div>
       </BrowserRouter>
