@@ -7,6 +7,7 @@ import SettingsPage from './pages/SettingsPage';
 import ProfilePage from './pages/ProfilePage';
 import OnboardingPage from './pages/OnboardingPage';
 import CapturePage from './pages/CapturePage';
+import SourceDetailPage from './pages/SourceDetailPage';
 
 const queryClient = new QueryClient();
 
@@ -35,6 +36,7 @@ function AppRoutes() {
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/capture" element={<CapturePage />} />
+        <Route path="/source/:id" element={<SourceDetailPage />} />
         <Route path="/onboarding" element={<OnboardingPage />} />
       </Routes>
     </OnboardingGuard>
