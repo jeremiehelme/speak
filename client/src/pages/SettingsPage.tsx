@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { useSettings, useUpdateSettings, useValidateApiKey } from '../hooks/use-settings';
+import { useSettings, useUpdateSettings, useValidateApiKey, useBookmarklet } from '../hooks/use-settings';
 
 function SettingsPage() {
   const { data: settings, isLoading } = useSettings();
+  const { data: bookmarkletData } = useBookmarklet();
   const updateSettings = useUpdateSettings();
   const validateKey = useValidateApiKey();
   const [apiKey, setApiKey] = useState('');
@@ -109,6 +110,28 @@ function SettingsPage() {
             Save Model Settings
           </button>
         </div>
+      </section>
+      {/* Bookmarklet Section */}
+      <section className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Bookmarklet</h2>
+        <p className="text-sm text-gray-600 mb-4">
+          Drag this link to your bookmarks bar to capture sources from any page:
+        </p>
+        {bookmarkletData?.code ? (
+          <a
+            href={bookmarkletData.code}
+            className="inline-block px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 no-underline"
+            onClick={(e) => e.preventDefault()}
+            draggable
+          >
+            Speak Capture
+          </a>
+        ) : (
+          <p className="text-sm text-gray-400">Loading bookmarklet...</p>
+        )}
+        <p className="text-xs text-gray-500 mt-2">
+          Drag the button above to your browser's bookmarks bar. Click it on any page to capture it as a source.
+        </p>
       </section>
     </div>
   );

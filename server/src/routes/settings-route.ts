@@ -2,10 +2,12 @@ import { Router } from 'express';
 import type { Kysely } from 'kysely';
 import type { Database } from '../db/types.js';
 import { SettingsService } from '../services/settings-service.js';
+import { BookmarkletService } from '../services/bookmarklet-service.js';
 
 export function createSettingsRouter(db: Kysely<Database>): Router {
   const router = Router();
   const settings = new SettingsService(db);
+  const bookmarklet = new BookmarkletService(settings);
 
   // GET /api/settings — public settings (no API key)
   router.get('/', async (_req, res, next) => {
@@ -73,6 +75,16 @@ export function createSettingsRouter(db: Kysely<Database>): Router {
           : 'Invalid API key';
         res.json({ data: { valid: false, message: errorMsg } });
       }
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // GET /api/settings/bookmarklet — get bookmarklet code
+  router.get('/bookmarklet', async (_req, res, next) => {
+    try {
+      const code = await bookmarklet.generateBookmarkletCode();
+      res.json({ data: { code } });
     } catch (err) {
       next(err);
     }

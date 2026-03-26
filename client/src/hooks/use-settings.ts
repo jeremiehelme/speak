@@ -38,3 +38,10 @@ export function useValidateApiKey() {
       apiPost<ValidationResult>('/settings/validate-key', { apiKey }),
   });
 }
+
+export function useBookmarklet() {
+  return useQuery<{ code: string }>({
+    queryKey: ['bookmarklet'],
+    queryFn: () => apiGet<{ code: string }>('/settings/bookmarklet'),
+  });
+}
