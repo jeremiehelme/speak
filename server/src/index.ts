@@ -8,6 +8,7 @@ import { createSettingsRouter } from './routes/settings-route.js';
 import { createProfileRouter } from './routes/profile-route.js';
 import { createCaptureRouter } from './routes/capture-route.js';
 import { createAnglesRouter } from './routes/angles-route.js';
+import { createDraftsRouter } from './routes/drafts-route.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -34,6 +35,7 @@ async function start(): Promise<void> {
   app.use('/api/profile', createProfileRouter(db));
   app.use('/api/capture', createCaptureRouter(db));
   app.use('/api/sources', createAnglesRouter(db));
+  app.use('/api', createDraftsRouter(db));
 
   // SPA fallback for production
   app.get('*', (_req, res) => {
