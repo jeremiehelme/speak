@@ -11,6 +11,7 @@ import { createCaptureRouter } from './routes/capture-route.js';
 import { createAnglesRouter } from './routes/angles-route.js';
 import { createDraftsRouter } from './routes/drafts-route.js';
 import { createSourcesRouter } from './routes/sources-route.js';
+import { createPublishingEngine } from './services/publishing-engine.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -49,6 +50,10 @@ async function start(): Promise<void> {
 
   // Error handler
   app.use(errorHandler);
+
+  // Start the automatic publishing engine
+  const publishingEngine = createPublishingEngine(db);
+  publishingEngine.start();
 
   app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);

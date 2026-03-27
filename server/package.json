@@ -13,6 +13,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",
     "@mozilla/readability": "^0.6.0",
+    "@types/node-cron": "^3.0.11",
     "better-sqlite3": "^12.8.0",
     "cheerio": "^1.2.0",
     "cors": "^2.8.6",
@@ -20,6 +21,7 @@
     "express": "^5.2.1",
     "jsdom": "^29.0.1",
     "kysely": "^0.28.14",
+    "node-cron": "^4.2.1",
     "uuid": "^13.0.0"
   },
   "devDependencies": {
