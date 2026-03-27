@@ -8,6 +8,8 @@ import {
   useValidateXConnection,
   useSchedule,
   useSaveSchedule,
+  useTimeRestrictions,
+  useSaveTimeRestrictions,
   type ScheduleSlot,
 } from '../hooks/use-settings';
 
@@ -22,6 +24,12 @@ function SettingsPage() {
   const saveSchedule = useSaveSchedule();
   const [scheduleSlots, setScheduleSlots] = useState<ScheduleSlot[] | null>(null);
   const [scheduleSaved, setScheduleSaved] = useState(false);
+  const { data: timeRestrictions } = useTimeRestrictions();
+  const saveTimeRestrictions = useSaveTimeRestrictions();
+  const [restrictionStart, setRestrictionStart] = useState<string | null>(null);
+  const [restrictionEnd, setRestrictionEnd] = useState<string | null>(null);
+  const [timezone, setTimezone] = useState<string | null>(null);
+  const [restrictionsSaved, setRestrictionsSaved] = useState(false);
   const [apiKey, setApiKey] = useState('');
   const [analysisModel, setAnalysisModel] = useState('');
   const [draftingModel, setDraftingModel] = useState('');
@@ -236,6 +244,69 @@ function SettingsPage() {
           isSaving={saveSchedule.isPending}
           saved={scheduleSaved}
         />
+      </section>
+
+      {/* Time Restrictions */}
+      <section className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Publishing Time Restrictions</h2>
+        <p className="text-sm text-gray-600 mb-4">
+          Restrict when Speak can publish on your behalf. Leave empty for no restrictions.
+        </p>
+        <div className="space-y-4">
+          <div className="flex gap-4 items-center">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Earliest</label>
+              <input
+                type="time"
+                value={restrictionStart ?? timeRestrictions?.start ?? ''}
+                onChange={(e) => setRestrictionStart(e.target.value || null)}
+                className="rounded-md border border-gray-300 px-3 py-1.5 text-sm"
+              />
+            </div>
+            <span className="text-gray-400 mt-4">to</span>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Latest</label>
+              <input
+                type="time"
+                value={restrictionEnd ?? timeRestrictions?.end ?? ''}
+                onChange={(e) => setRestrictionEnd(e.target.value || null)}
+                className="rounded-md border border-gray-300 px-3 py-1.5 text-sm"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Timezone</label>
+            <input
+              type="text"
+              value={timezone ?? timeRestrictions?.timezone ?? ''}
+              onChange={(e) => setTimezone(e.target.value)}
+              placeholder={Intl.DateTimeFormat().resolvedOptions().timeZone}
+              className="w-64 rounded-md border border-gray-300 px-3 py-1.5 text-sm"
+            />
+          </div>
+          <button
+            onClick={async () => {
+              await saveTimeRestrictions.mutateAsync({
+                start: restrictionStart ?? timeRestrictions?.start ?? null,
+                end: restrictionEnd ?? timeRestrictions?.end ?? null,
+                timezone: timezone ?? timeRestrictions?.timezone,
+              });
+              setRestrictionStart(null);
+              setRestrictionEnd(null);
+              setTimezone(null);
+              setRestrictionsSaved(true);
+              setTimeout(() => setRestrictionsSaved(false), 2000);
+            }}
+            disabled={saveTimeRestrictions.isPending}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 disabled:opacity-50"
+          >
+            {restrictionsSaved
+              ? 'Saved!'
+              : saveTimeRestrictions.isPending
+                ? 'Saving...'
+                : 'Save Restrictions'}
+          </button>
+        </div>
       </section>
 
       {/* LLM Provider Settings */}

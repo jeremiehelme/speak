@@ -174,5 +174,35 @@ export function createSettingsRouter(db: Kysely<Database>): Router {
     }
   });
 
+  // GET /api/settings/time-restrictions — get publishing time restrictions
+  router.get('/time-restrictions', async (_req, res, next) => {
+    try {
+      const restrictions = await scheduleService.getTimeRestrictions();
+      res.json({ data: restrictions });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // PUT /api/settings/time-restrictions — save publishing time restrictions
+  router.put('/time-restrictions', async (req, res, next) => {
+    try {
+      const { start, end, timezone } = req.body as {
+        start?: string | null;
+        end?: string | null;
+        timezone?: string;
+      };
+      await scheduleService.saveTimeRestrictions({
+        start: start ?? null,
+        end: end ?? null,
+        timezone: timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone,
+      });
+      const restrictions = await scheduleService.getTimeRestrictions();
+      res.json({ data: restrictions });
+    } catch (err) {
+      next(err);
+    }
+  });
+
   return router;
 }

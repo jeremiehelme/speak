@@ -77,4 +77,51 @@ describe('ScheduleService', () => {
     expect(defaults[0]).toHaveProperty('day');
     expect(defaults[0]).toHaveProperty('time');
   });
+
+  it('should return default time restrictions when none set', async () => {
+    const restrictions = await scheduleService.getTimeRestrictions();
+    expect(restrictions.start).toBeNull();
+    expect(restrictions.end).toBeNull();
+    expect(restrictions.timezone).toBeTruthy();
+  });
+
+  it('should save and retrieve time restrictions', async () => {
+    await scheduleService.saveTimeRestrictions({
+      start: '08:00',
+      end: '18:00',
+      timezone: 'America/New_York',
+    });
+
+    const restrictions = await scheduleService.getTimeRestrictions();
+    expect(restrictions.start).toBe('08:00');
+    expect(restrictions.end).toBe('18:00');
+    expect(restrictions.timezone).toBe('America/New_York');
+  });
+
+  it('should allow time within restriction window', () => {
+    const restrictions = { start: '08:00', end: '18:00', timezone: 'UTC' };
+    expect(scheduleService.isTimeAllowed('09:00', restrictions)).toBe(true);
+    expect(scheduleService.isTimeAllowed('18:00', restrictions)).toBe(true);
+  });
+
+  it('should reject time outside restriction window', () => {
+    const restrictions = { start: '08:00', end: '18:00', timezone: 'UTC' };
+    expect(scheduleService.isTimeAllowed('07:00', restrictions)).toBe(false);
+    expect(scheduleService.isTimeAllowed('19:00', restrictions)).toBe(false);
+  });
+
+  it('should allow any time when no restrictions set', () => {
+    const restrictions = { start: null, end: null, timezone: 'UTC' };
+    expect(scheduleService.isTimeAllowed('03:00', restrictions)).toBe(true);
+  });
+
+  it('should snap to restriction start when outside window', () => {
+    const restrictions = { start: '08:00', end: '18:00', timezone: 'UTC' };
+    expect(scheduleService.getNextAllowedTime('06:00', restrictions)).toBe('08:00');
+  });
+
+  it('should return same time when within window', () => {
+    const restrictions = { start: '08:00', end: '18:00', timezone: 'UTC' };
+    expect(scheduleService.getNextAllowedTime('12:00', restrictions)).toBe('12:00');
+  });
 });

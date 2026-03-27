@@ -97,3 +97,27 @@ export function useSaveSchedule() {
     },
   });
 }
+
+export interface TimeRestrictions {
+  start: string | null;
+  end: string | null;
+  timezone: string;
+}
+
+export function useTimeRestrictions() {
+  return useQuery<TimeRestrictions>({
+    queryKey: ['time-restrictions'],
+    queryFn: () => apiGet<TimeRestrictions>('/settings/time-restrictions'),
+  });
+}
+
+export function useSaveTimeRestrictions() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (restrictions: Partial<TimeRestrictions>) =>
+      apiPut<TimeRestrictions>('/settings/time-restrictions', restrictions),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['time-restrictions'] });
+    },
+  });
+}
