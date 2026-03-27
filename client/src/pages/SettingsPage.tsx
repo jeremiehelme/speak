@@ -6,6 +6,9 @@ import {
   useBookmarklet,
   useSaveXCredentials,
   useValidateXConnection,
+  useSchedule,
+  useSaveSchedule,
+  type ScheduleSlot,
 } from '../hooks/use-settings';
 
 function SettingsPage() {
@@ -15,6 +18,10 @@ function SettingsPage() {
   const validateKey = useValidateApiKey();
   const saveXCreds = useSaveXCredentials();
   const validateX = useValidateXConnection();
+  const { data: scheduleData } = useSchedule();
+  const saveSchedule = useSaveSchedule();
+  const [scheduleSlots, setScheduleSlots] = useState<ScheduleSlot[] | null>(null);
+  const [scheduleSaved, setScheduleSaved] = useState(false);
   const [apiKey, setApiKey] = useState('');
   const [analysisModel, setAnalysisModel] = useState('');
   const [draftingModel, setDraftingModel] = useState('');
@@ -209,6 +216,28 @@ function SettingsPage() {
         )}
       </section>
 
+      {/* Publishing Schedule */}
+      <section className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Publishing Schedule</h2>
+        <p className="text-sm text-gray-600 mb-4">
+          Set your preferred publishing days and times. Suggested optimal times for X engagement are
+          pre-filled as defaults.
+        </p>
+        <ScheduleEditor
+          slots={scheduleSlots ?? scheduleData?.schedule.slots ?? []}
+          defaults={scheduleData?.defaults ?? []}
+          onChange={setScheduleSlots}
+          onSave={async (slots) => {
+            await saveSchedule.mutateAsync(slots);
+            setScheduleSlots(null);
+            setScheduleSaved(true);
+            setTimeout(() => setScheduleSaved(false), 2000);
+          }}
+          isSaving={saveSchedule.isPending}
+          saved={scheduleSaved}
+        />
+      </section>
+
       {/* LLM Provider Settings */}
       <section className="bg-white rounded-lg shadow p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">LLM Provider Settings</h2>
@@ -267,6 +296,106 @@ function SettingsPage() {
           as a source.
         </p>
       </section>
+    </div>
+  );
+}
+
+const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+const DAY_LABELS: Record<string, string> = {
+  monday: 'Mon',
+  tuesday: 'Tue',
+  wednesday: 'Wed',
+  thursday: 'Thu',
+  friday: 'Fri',
+  saturday: 'Sat',
+  sunday: 'Sun',
+};
+
+function ScheduleEditor({
+  slots,
+  defaults,
+  onChange,
+  onSave,
+  isSaving,
+  saved,
+}: {
+  slots: ScheduleSlot[];
+  defaults: ScheduleSlot[];
+  onChange: (slots: ScheduleSlot[]) => void;
+  onSave: (slots: ScheduleSlot[]) => void;
+  isSaving: boolean;
+  saved: boolean;
+}) {
+  const activeDays = new Set(slots.map((s) => s.day));
+  const timeByDay = Object.fromEntries(slots.map((s) => [s.day, s.time]));
+
+  const toggleDay = (day: string) => {
+    if (activeDays.has(day)) {
+      onChange(slots.filter((s) => s.day !== day));
+    } else {
+      const defaultSlot = defaults.find((d) => d.day === day);
+      onChange([...slots, { day, time: defaultSlot?.time ?? '09:00' }]);
+    }
+  };
+
+  const setTime = (day: string, time: string) => {
+    onChange(slots.map((s) => (s.day === day ? { ...s, time } : s)));
+  };
+
+  const hasSlots = slots.length > 0;
+
+  return (
+    <div className="space-y-4">
+      {slots.length === 0 && defaults.length > 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+          <p className="text-sm text-blue-800">
+            Suggested optimal times: Weekdays 9am and 12pm tend to get the most engagement on X.
+          </p>
+          <button
+            onClick={() => onChange(defaults)}
+            className="mt-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
+          >
+            Use suggested defaults
+          </button>
+        </div>
+      )}
+      <div className="flex gap-2 flex-wrap">
+        {DAYS.map((day) => (
+          <button
+            key={day}
+            onClick={() => toggleDay(day)}
+            className={`px-3 py-1.5 rounded-md text-sm font-medium ${
+              activeDays.has(day)
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            {DAY_LABELS[day]}
+          </button>
+        ))}
+      </div>
+      {hasSlots && (
+        <div className="space-y-2">
+          {DAYS.filter((day) => activeDays.has(day)).map((day) => (
+            <div key={day} className="flex items-center gap-3">
+              <span className="text-sm font-medium text-gray-700 w-12">{DAY_LABELS[day]}</span>
+              <input
+                type="time"
+                value={timeByDay[day] ?? '09:00'}
+                onChange={(e) => setTime(day, e.target.value)}
+                className="rounded-md border border-gray-300 px-3 py-1.5 text-sm"
+              />
+            </div>
+          ))}
+        </div>
+      )}
+      <button
+        onClick={() => onSave(slots)}
+        disabled={isSaving}
+        className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 disabled:opacity-50"
+      >
+        {saved ? 'Saved!' : isSaving ? 'Saving...' : 'Save Schedule'}
+      </button>
     </div>
   );
 }

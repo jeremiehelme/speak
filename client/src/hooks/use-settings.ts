@@ -69,3 +69,31 @@ export function useValidateXConnection() {
       apiPost<ValidationResult>('/settings/validate-x', creds ?? {}),
   });
 }
+
+export interface ScheduleSlot {
+  day: string;
+  time: string;
+}
+
+interface ScheduleData {
+  schedule: { slots: ScheduleSlot[] };
+  defaults: ScheduleSlot[];
+}
+
+export function useSchedule() {
+  return useQuery<ScheduleData>({
+    queryKey: ['schedule'],
+    queryFn: () => apiGet<ScheduleData>('/settings/schedule'),
+  });
+}
+
+export function useSaveSchedule() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (slots: ScheduleSlot[]) =>
+      apiPut<{ schedule: { slots: ScheduleSlot[] } }>('/settings/schedule', { slots }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['schedule'] });
+    },
+  });
+}

@@ -4,12 +4,14 @@ import type { Database } from '../db/types.js';
 import { SettingsService } from '../services/settings-service.js';
 import { BookmarkletService } from '../services/bookmarklet-service.js';
 import { XPublishingService } from '../services/x-publishing-service.js';
+import { ScheduleService } from '../services/schedule-service.js';
 
 export function createSettingsRouter(db: Kysely<Database>): Router {
   const router = Router();
   const settings = new SettingsService(db);
   const bookmarklet = new BookmarkletService(settings);
   const xPublishing = new XPublishingService(settings);
+  const scheduleService = new ScheduleService(settings);
 
   // GET /api/settings — public settings (no secrets)
   router.get('/', async (_req, res, next) => {
@@ -138,6 +140,35 @@ export function createSettingsRouter(db: Kysely<Database>): Router {
 
       const result = await xPublishing.validateCredentials(creds);
       res.json({ data: result });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // GET /api/settings/schedule — get publishing schedule
+  router.get('/schedule', async (_req, res, next) => {
+    try {
+      const schedule = await scheduleService.getSchedule();
+      const defaults = scheduleService.getOptimalDefaults();
+      res.json({ data: { schedule, defaults } });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // PUT /api/settings/schedule — save publishing schedule
+  router.put('/schedule', async (req, res, next) => {
+    try {
+      const { slots } = req.body as { slots: { day: string; time: string }[] };
+      if (!Array.isArray(slots)) {
+        res.status(400).json({
+          error: { code: 'INVALID_SCHEDULE', message: 'slots must be an array' },
+        });
+        return;
+      }
+      await scheduleService.saveSchedule({ slots });
+      const schedule = await scheduleService.getSchedule();
+      res.json({ data: { schedule } });
     } catch (err) {
       next(err);
     }
