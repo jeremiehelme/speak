@@ -1,27 +1,26 @@
-import cron from 'node-cron';
 import type { Kysely } from 'kysely';
 import type { Database } from '../db/types.js';
 import { XPublishingService } from './x-publishing-service.js';
 import { SettingsService } from './settings-service.js';
 
 export class PublishingEngine {
-  private task: cron.ScheduledTask | null = null;
+  private interval: ReturnType<typeof setInterval> | null = null;
 
   constructor(
     private db: Kysely<Database>,
     private xPublishing: XPublishingService,
   ) {}
 
-  /** Start the publishing engine — checks every minute for due drafts */
+  /** Start the publishing engine for local dev — checks every minute */
   start(): void {
-    if (this.task) return;
+    if (this.interval) return;
 
-    // Run every minute
-    this.task = cron.schedule('* * * * *', () => {
+    // Check every minute
+    this.interval = setInterval(() => {
       this.processDuePublications().catch((err) => {
         console.error('[PublishingEngine] Error processing publications:', err);
       });
-    });
+    }, 60_000);
 
     // Also process immediately on start (catch up on missed publications)
     this.processDuePublications().catch((err) => {
@@ -32,9 +31,9 @@ export class PublishingEngine {
   }
 
   stop(): void {
-    if (this.task) {
-      this.task.stop();
-      this.task = null;
+    if (this.interval) {
+      clearInterval(this.interval);
+      this.interval = null;
       console.log('[PublishingEngine] Stopped');
     }
   }
@@ -42,7 +41,6 @@ export class PublishingEngine {
   async processDuePublications(): Promise<number> {
     const now = Math.floor(Date.now() / 1000);
 
-    // Find all queued drafts that are due
     const dueDrafts = await this.db
       .selectFrom('drafts')
       .selectAll()
@@ -79,10 +77,8 @@ export class PublishingEngine {
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Unknown error';
 
-        // Check for rate limit — retry later
         if (message.includes('rate limit')) {
           console.warn(`[PublishingEngine] Rate limited on draft ${draft.id} — will retry`);
-          // Push scheduled_at forward by 15 minutes for retry
           await this.db
             .updateTable('drafts')
             .set({

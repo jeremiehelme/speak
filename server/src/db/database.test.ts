@@ -1,5 +1,8 @@
 import { describe, it, expect, afterEach } from 'vitest';
-import { createDatabase, migrateDatabase } from './database.js';
+import {
+  createTestDatabase as createDatabase,
+  migrateTestDatabase as migrateDatabase,
+} from './test-database.js';
 import type { Database } from './types.js';
 import { sql, type Kysely } from 'kysely';
 import fs from 'node:fs';

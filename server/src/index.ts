@@ -1,57 +1,29 @@
 import dotenv from 'dotenv';
-import express from 'express';
-import cors from 'cors';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { initDatabase } from './db/database.js';
-import { errorHandler } from './middleware/error-handler.js';
-import { createSettingsRouter } from './routes/settings-route.js';
-import { createProfileRouter } from './routes/profile-route.js';
-import { createCaptureRouter } from './routes/capture-route.js';
-import { createAnglesRouter } from './routes/angles-route.js';
-import { createDraftsRouter } from './routes/drafts-route.js';
-import { createSourcesRouter } from './routes/sources-route.js';
+import { createApp } from './app.js';
 import { createPublishingEngine } from './services/publishing-engine.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
-const app = express();
 const PORT = parseInt(process.env['PORT'] ?? '3001', 10);
 
-app.use(cors());
-app.use(express.json());
-
-// Serve static frontend in production
-const clientDist = path.resolve(__dirname, '../../client/dist');
-app.use(express.static(clientDist));
-
-// Health check
-app.get('/api/health', (_req, res) => {
-  res.json({ data: { status: 'ok' } });
-});
-
 async function start(): Promise<void> {
-  const db = await initDatabase();
+  const { app, db } = await createApp();
 
-  // Mount routes
-  app.use('/api/settings', createSettingsRouter(db));
-  app.use('/api/profile', createProfileRouter(db));
-  app.use('/api/capture', createCaptureRouter(db));
-  app.use('/api/sources', createSourcesRouter(db));
-  app.use('/api/sources', createAnglesRouter(db));
-  app.use('/api', createDraftsRouter(db));
+  // Serve static frontend in production (local dev only — Vercel handles this)
+  const clientDist = path.resolve(__dirname, '../../client/dist');
+  const express = await import('express');
+  app.use(express.default.static(clientDist));
 
   // SPA fallback for production
   app.get('/{*path}', (_req, res) => {
     res.sendFile(path.join(clientDist, 'index.html'));
   });
 
-  // Error handler
-  app.use(errorHandler);
-
-  // Start the automatic publishing engine
+  // Start the automatic publishing engine (local dev only — Vercel uses cron)
   const publishingEngine = createPublishingEngine(db);
   publishingEngine.start();
 
@@ -64,5 +36,3 @@ start().catch((err) => {
   console.error('Failed to start server:', err);
   process.exit(1);
 });
-
-export { app };

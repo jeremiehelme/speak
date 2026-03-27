@@ -1,12 +1,8 @@
-import SQLite from 'better-sqlite3';
-import { Kysely, Migrator, SqliteDialect, type Migration, type MigrationProvider } from 'kysely';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import pg from 'pg';
+import { Kysely, Migrator, PostgresDialect, type Migration, type MigrationProvider } from 'kysely';
 import type { Database } from './types.js';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-const DATA_DIR = path.resolve(__dirname, '../../../data');
+const { Pool } = pg;
 
 class CustomMigrationProvider implements MigrationProvider {
   async getMigrations(): Promise<Record<string, Migration>> {
@@ -23,12 +19,19 @@ class CustomMigrationProvider implements MigrationProvider {
   }
 }
 
-export function createDatabase(dbPath?: string): Kysely<Database> {
-  const resolvedPath = dbPath ?? path.join(DATA_DIR, 'speak.db');
-  const dialect = new SqliteDialect({
-    database: new SQLite(resolvedPath),
+export function createDatabase(connectionString?: string): Kysely<Database> {
+  const url = connectionString ?? process.env['DATABASE_URL'];
+  if (!url) {
+    throw new Error('DATABASE_URL environment variable is required');
+  }
+
+  const pool = new Pool({
+    connectionString: url,
+    ssl: url.includes('localhost') ? false : { rejectUnauthorized: false },
+    max: 10,
   });
 
+  const dialect = new PostgresDialect({ pool });
   return new Kysely<Database>({ dialect });
 }
 
