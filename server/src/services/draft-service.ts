@@ -15,6 +15,23 @@ export class DraftService {
     this.voiceService = new VoiceService(db);
   }
 
+  private buildTargetedQAPairs(source: { targeted_questions: string | null; targeted_answers: string | null }): { question: string; answer: string }[] {
+    if (!source.targeted_questions || !source.targeted_answers) return [];
+    try {
+      const questions = JSON.parse(source.targeted_questions) as string[];
+      const answers = JSON.parse(source.targeted_answers) as string[];
+      const pairs: { question: string; answer: string }[] = [];
+      for (let i = 0; i < questions.length; i++) {
+        if (answers[i] && answers[i].trim()) {
+          pairs.push({ question: questions[i]!, answer: answers[i]! });
+        }
+      }
+      return pairs;
+    } catch {
+      return [];
+    }
+  }
+
   async generateDraft(sourceId: number, angle: string, llmProvider: LlmProvider): Promise<Draft> {
     const source = await this.db
       .selectFrom('sources')
@@ -24,12 +41,17 @@ export class DraftService {
 
     if (!source) throw new Error('Source not found');
 
-    const voiceContext = await this.voiceService.assembleVoiceContext(source.opinion);
+    const qaPairs = this.buildTargetedQAPairs(source);
+    const voiceContext = await this.voiceService.assembleVoiceContext(source.opinion, qaPairs);
     const draftingModel = (await this.settingsService.get('drafting_model')) || 'claude-sonnet-4-6';
 
     const systemPrompt = loadPrompt('system-voice.md', {
       voiceDescription: voiceContext.voiceDescription,
     });
+
+    const targetedQASection = voiceContext.targetedQA
+      ? `\n## Author's Specific Reasoning\n${voiceContext.targetedQA}`
+      : '';
 
     const userPrompt = loadPrompt('generate-draft.md', {
       summary: source.analysis_summary || '',
@@ -39,6 +61,7 @@ export class DraftService {
       examplePosts: voiceContext.examplePosts,
       generalOpinions: voiceContext.generalOpinions,
       articleOpinion: voiceContext.articleOpinion,
+      targetedQA: targetedQASection,
     });
 
     const response = await llmProvider.complete({
@@ -83,12 +106,17 @@ export class DraftService {
 
     if (!source) throw new Error('Source not found');
 
-    const voiceContext = await this.voiceService.assembleVoiceContext(source.opinion);
+    const qaPairs = this.buildTargetedQAPairs(source);
+    const voiceContext = await this.voiceService.assembleVoiceContext(source.opinion, qaPairs);
     const draftingModel = (await this.settingsService.get('drafting_model')) || 'claude-sonnet-4-6';
 
     const systemPrompt = loadPrompt('system-voice.md', {
       voiceDescription: voiceContext.voiceDescription,
     });
+
+    const targetedQASection = voiceContext.targetedQA
+      ? `\n## Author's Specific Reasoning\n${voiceContext.targetedQA}`
+      : '';
 
     let userPrompt = loadPrompt('generate-draft.md', {
       summary: source.analysis_summary || '',
@@ -98,6 +126,7 @@ export class DraftService {
       examplePosts: voiceContext.examplePosts,
       generalOpinions: voiceContext.generalOpinions,
       articleOpinion: voiceContext.articleOpinion,
+      targetedQA: targetedQASection,
     });
 
     if (feedback) {

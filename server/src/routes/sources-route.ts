@@ -107,6 +107,87 @@ export function createSourcesRouter(db: Kysely<Database>): Router {
     }
   });
 
+  // PUT /api/sources/:id — update source fields (e.g. title)
+  router.put('/:id', async (req, res, next) => {
+    try {
+      const id = parseInt(req.params['id']!, 10);
+      const { title } = req.body as { title?: string };
+
+      const source = await db
+        .selectFrom('sources')
+        .selectAll()
+        .where('id', '=', id)
+        .executeTakeFirst();
+
+      if (!source) {
+        res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Source not found' } });
+        return;
+      }
+
+      const updates: Record<string, unknown> = { updated_at: Math.floor(Date.now() / 1000) };
+      if (title !== undefined) updates['title'] = title;
+
+      await db
+        .updateTable('sources')
+        .set(updates)
+        .where('id', '=', id)
+        .execute();
+
+      const updated = await db
+        .selectFrom('sources')
+        .selectAll()
+        .where('id', '=', id)
+        .executeTakeFirst();
+
+      res.json({ data: updated });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // PUT /api/sources/:id/answers — save targeted answers
+  router.put('/:id/answers', async (req, res, next) => {
+    try {
+      const id = parseInt(req.params['id']!, 10);
+      const { answers } = req.body as { answers: string[] };
+
+      if (!answers || !Array.isArray(answers) || !answers.every((a) => typeof a === 'string')) {
+        res.status(400).json({ error: { code: 'INVALID_INPUT', message: 'answers must be an array of strings' } });
+        return;
+      }
+
+      const source = await db
+        .selectFrom('sources')
+        .selectAll()
+        .where('id', '=', id)
+        .executeTakeFirst();
+
+      if (!source) {
+        res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Source not found' } });
+        return;
+      }
+
+      await db
+        .updateTable('sources')
+        .set({
+          targeted_answers: JSON.stringify(answers),
+          updated_at: Math.floor(Date.now() / 1000),
+        })
+        .where('id', '=', id)
+        .execute();
+
+      const updated = await db
+        .selectFrom('sources')
+        .selectAll()
+        .where('id', '=', id)
+        .executeTakeFirst();
+
+      res.json({ data: updated });
+    } catch (err) {
+      next(err);
+    }
+  });
+
   // DELETE /api/sources/:id — delete source and drafts
   router.delete('/:id', async (req, res, next) => {
     try {

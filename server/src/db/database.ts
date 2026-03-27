@@ -10,9 +10,11 @@ const DATA_DIR = path.resolve(__dirname, '../../../data');
 
 class CustomMigrationProvider implements MigrationProvider {
   async getMigrations(): Promise<Record<string, Migration>> {
-    const migration = await import('./migrations/001-initial-schema.js');
+    const migration001 = await import('./migrations/001-initial-schema.js');
+    const migration002 = await import('./migrations/002-add-targeted-questions.js');
     return {
-      '001-initial-schema': migration,
+      '001-initial-schema': migration001,
+      '002-add-targeted-questions': migration002,
     };
   }
 }

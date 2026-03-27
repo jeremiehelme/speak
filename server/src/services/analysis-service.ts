@@ -3,12 +3,17 @@ import type { Database } from '../db/types.js';
 import type { LlmProvider } from '../llm/llm-provider.js';
 import { loadPrompt } from '../llm/prompt-loader.js';
 import { SettingsService } from './settings-service.js';
+import { AngleService } from './angle-service.js';
 
 export class AnalysisService {
+  private angleService: AngleService;
+
   constructor(
     private db: Kysely<Database>,
     private settingsService: SettingsService,
-  ) {}
+  ) {
+    this.angleService = new AngleService(db, settingsService);
+  }
 
   async analyzeSource(sourceId: number, llmProvider: LlmProvider): Promise<void> {
     const source = await this.db
@@ -41,7 +46,12 @@ export class AnalysisService {
         maxTokens: 1024,
       });
 
-      const analysis = JSON.parse(response.content);
+      const jsonText = response.content.replace(/^```(?:json)?\s*\n?/m, '').replace(/\n?```\s*$/m, '').trim();
+      const analysis = JSON.parse(jsonText);
+
+      if (!analysis || typeof analysis !== 'object' || !analysis.summary || !Array.isArray(analysis.themes) || !Array.isArray(analysis.takeaways)) {
+        throw new Error('LLM returned invalid analysis: expected object with summary, themes, and takeaways');
+      }
 
       await this.db
         .updateTable('sources')
@@ -56,6 +66,11 @@ export class AnalysisService {
         })
         .where('id', '=', sourceId)
         .execute();
+
+      // Fire-and-forget angle generation after successful analysis
+      this.angleService.generateAngles(sourceId, llmProvider, 1).catch((err) => {
+        console.error('Auto angle generation error:', (err as Error).message);
+      });
     } catch (err) {
       console.error('Analysis failed:', (err as Error).message);
       await this.db

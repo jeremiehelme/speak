@@ -18,6 +18,8 @@ General opinions:
 Author's opinion on this specific article:
 {{articleOpinion}}
 
+{{targetedQA}}
+
 ## Instructions
 Write a single X post (max 280 characters) that:
 1. Matches the author's voice exactly — use their tone, vocabulary, and style

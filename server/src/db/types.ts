@@ -20,6 +20,9 @@ export interface SourcesTable {
   relevance: string | null;
   opinion: string | null;
   analysis_status: string;
+  targeted_questions: string | null;
+  targeted_answers: string | null;
+  angles: string | null;
   created_at: Generated<number>;
   updated_at: Generated<number>;
 }

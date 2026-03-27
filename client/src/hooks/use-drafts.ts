@@ -24,15 +24,23 @@ export function useGenerateDraft() {
 }
 
 export function useUpdateDraft() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ draftId, content }: { draftId: number; content: string }) =>
       apiPut<Draft>(`/drafts/${draftId}`, { content }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['source'] });
+    },
   });
 }
 
 export function useRegenerateDraft() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ draftId, feedback, angle }: { draftId: number; feedback?: string; angle?: string }) =>
       apiPost<Draft>(`/drafts/${draftId}/regenerate`, { feedback, angle }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['source'] });
+    },
   });
 }

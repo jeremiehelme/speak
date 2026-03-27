@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiGet, apiPost, apiDelete } from '../lib/api-client';
+import { apiGet, apiPost, apiPut, apiDelete } from '../lib/api-client';
 import { useRef, useEffect } from 'react';
 
 export interface Source {
@@ -15,6 +15,9 @@ export interface Source {
   relevance: string | null;
   opinion: string | null;
   analysis_status: string;
+  targeted_questions: string | null;
+  targeted_answers: string | null;
+  angles: string | null;
   created_at: number;
   updated_at: number;
 }
@@ -35,8 +38,11 @@ export function useSource(id: string | undefined) {
     queryFn: () => apiGet<Source>(`/sources/${id}`),
     enabled: !!id,
     refetchInterval: (query) => {
-      const status = query.state.data?.analysis_status;
-      return status === 'pending' ? 2000 : false;
+      const data = query.state.data;
+      if (!data) return false;
+      if (data.analysis_status === 'pending') return 2000;
+      if (data.analysis_status === 'complete' && !data.angles) return 2000;
+      return false;
     },
   });
   return query;
@@ -70,8 +76,35 @@ export interface Angle {
 }
 
 export function useGenerateAngles() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ sourceId, count }: { sourceId: number; count?: number }) =>
       apiPost<Angle[]>(`/sources/${sourceId}/angles`, { count }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['source'] });
+    },
+  });
+}
+
+export function useUpdateSource() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ sourceId, title }: { sourceId: number; title: string }) =>
+      apiPut<Source>(`/sources/${sourceId}`, { title }),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['source', String(variables.sourceId)] });
+      queryClient.invalidateQueries({ queryKey: ['sources'] });
+    },
+  });
+}
+
+export function useSaveAnswers() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ sourceId, answers }: { sourceId: number; answers: string[] }) =>
+      apiPut<Source>(`/sources/${sourceId}/answers`, { answers }),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['source', String(variables.sourceId)] });
+    },
   });
 }

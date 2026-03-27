@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useSource, useGenerateAngles, useDeleteSource, useRetryAnalysis, type Angle } from '../hooks/use-sources';
+import { useSource, useGenerateAngles, useDeleteSource, useRetryAnalysis, useSaveAnswers, useUpdateSource, type Angle } from '../hooks/use-sources';
 import { useGenerateDraft, useUpdateDraft, useRegenerateDraft, type Draft } from '../hooks/use-drafts';
 
 function SourceDetailPage() {
@@ -13,6 +13,9 @@ function SourceDetailPage() {
   const regenerateDraft = useRegenerateDraft();
   const deleteSource = useDeleteSource();
   const retryAnalysis = useRetryAnalysis();
+  const saveAnswers = useSaveAnswers();
+  const updateSource = useUpdateSource();
+  const [editingTitle, setEditingTitle] = useState(false);
 
   const [angles, setAngles] = useState<Angle[]>([]);
   const [selectedAngle, setSelectedAngle] = useState<string | null>(null);
@@ -20,14 +23,57 @@ function SourceDetailPage() {
   const [draftContent, setDraftContent] = useState('');
   const [feedback, setFeedback] = useState('');
   const [copied, setCopied] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [answers, setAnswers] = useState<string[]>([]);
+  const answersInitialized = useRef(false);
+
+  // Restore most recent draft from DB on page load
+  useEffect(() => {
+    if (source?.drafts && source.drafts.length > 0 && !draft) {
+      const mostRecent = source.drafts[0] as Draft;
+      setDraft(mostRecent);
+      setDraftContent(mostRecent.content || '');
+    }
+  }, [source?.drafts]);
+
+  // Load stored angles from source when available
+  useEffect(() => {
+    if (source?.angles && angles.length === 0) {
+      try {
+        const stored = JSON.parse(source.angles) as Angle[];
+        if (stored.length > 0) {
+          setAngles(stored);
+          if (stored.length === 1) {
+            setSelectedAngle(stored[0]!.title);
+          }
+        }
+      } catch {
+        // ignore parse errors
+      }
+    }
+  }, [source?.angles]);
+
+  // Initialize answers from source
+  useEffect(() => {
+    if (source?.targeted_questions && !answersInitialized.current) {
+      const questions = JSON.parse(source.targeted_questions) as string[];
+      const stored = source.targeted_answers ? JSON.parse(source.targeted_answers) as string[] : [];
+      setAnswers(questions.map((_, i) => stored[i] || ''));
+      answersInitialized.current = true;
+    }
+  }, [source?.targeted_questions, source?.targeted_answers]);
 
   if (isLoading) return <div className="text-gray-500">Loading source...</div>;
   if (error) return <div className="text-red-600">Error: {(error as Error).message}</div>;
   if (!source) return <div className="text-gray-500">Source not found</div>;
 
-  const themes = source.themes ? JSON.parse(source.themes) as string[] : [];
-  const takeaways = source.takeaways ? JSON.parse(source.takeaways) as string[] : [];
+  let themes: string[] = [];
+  try { themes = source.themes ? JSON.parse(source.themes) as string[] : []; } catch { /* ignore */ }
+  let takeaways: string[] = [];
+  try { takeaways = source.takeaways ? JSON.parse(source.takeaways) as string[] : []; } catch { /* ignore */ }
+  let targetedQuestions: string[] = [];
+  try { targetedQuestions = source.targeted_questions ? JSON.parse(source.targeted_questions) as string[] : []; } catch { /* ignore */ }
 
   const handleGenerateAngles = async (count: number) => {
     const result = await generateAngles.mutateAsync({ sourceId: source.id, count });
@@ -48,6 +94,8 @@ function SourceDetailPage() {
     if (!draft) return;
     const updated = await updateDraft.mutateAsync({ draftId: draft.id, content: draftContent });
     setDraft(updated);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
   };
 
   const handleCopy = () => {
@@ -73,10 +121,42 @@ function SourceDetailPage() {
     navigate('/');
   };
 
+  const handleAnswerBlur = (index: number, value: string) => {
+    const updated = [...answers];
+    updated[index] = value;
+    setAnswers(updated);
+    saveAnswers.mutate({ sourceId: source.id, answers: updated });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">{source.title || 'Untitled Source'}</h1>
+        {editingTitle ? (
+          <input
+            autoFocus
+            defaultValue={source.title || ''}
+            onBlur={(e) => {
+              const newTitle = e.target.value.trim();
+              if (newTitle && newTitle !== source.title) {
+                updateSource.mutate({ sourceId: source.id, title: newTitle });
+              }
+              setEditingTitle(false);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+              if (e.key === 'Escape') setEditingTitle(false);
+            }}
+            className="text-2xl font-bold text-gray-900 border-b-2 border-blue-500 outline-none bg-transparent w-full"
+          />
+        ) : (
+          <h1
+            onClick={() => setEditingTitle(true)}
+            className="text-2xl font-bold text-gray-900 cursor-pointer hover:text-blue-600"
+            title="Click to edit title"
+          >
+            {source.title || 'Untitled Source'}
+          </h1>
+        )}
         <button
           onClick={() => setShowDeleteConfirm(true)}
           className="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded-md"
@@ -160,13 +240,17 @@ function SourceDetailPage() {
         <section className="bg-white rounded-lg shadow p-6 space-y-4">
           <h2 className="text-lg font-semibold text-gray-900">Content Angles</h2>
           {angles.length === 0 ? (
-            <button
-              onClick={() => handleGenerateAngles(1)}
-              disabled={generateAngles.isPending}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 disabled:opacity-50"
-            >
-              {generateAngles.isPending ? 'Generating...' : 'Generate Best Angle'}
-            </button>
+            source.analysis_status === 'complete' && !source.angles ? (
+              <div className="text-sm text-blue-600">Generating angle...</div>
+            ) : (
+              <button
+                onClick={() => handleGenerateAngles(1)}
+                disabled={generateAngles.isPending}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 disabled:opacity-50"
+              >
+                {generateAngles.isPending ? 'Generating...' : 'Generate Best Angle'}
+              </button>
+            )
           ) : (
             <div className="space-y-2">
               {angles.map((angle, i) => (
@@ -191,16 +275,40 @@ function SourceDetailPage() {
             </div>
           )}
 
-          {selectedAngle && !draft && (
-            <button
-              onClick={handleGenerateDraft}
-              disabled={generateDraft.isPending}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 disabled:opacity-50"
-            >
-              {generateDraft.isPending ? 'Generating draft...' : 'Generate Draft'}
-            </button>
-          )}
         </section>
+      )}
+
+      {/* Targeted Questions Section */}
+      {selectedAngle && targetedQuestions.length > 0 && (
+        <section className="bg-white rounded-lg shadow p-6 space-y-4">
+          <h2 className="text-lg font-semibold text-gray-900">Your Perspective</h2>
+          <p className="text-xs text-gray-500">Answer these questions to make your draft more authentic. Answers are optional.</p>
+          <div className="space-y-4">
+            {targetedQuestions.map((question, i) => (
+              <div key={i}>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{question}</label>
+                <input
+                  type="text"
+                  defaultValue={answers[i] || ''}
+                  onBlur={(e) => handleAnswerBlur(i, e.target.value)}
+                  placeholder="Your answer..."
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Generate Draft Button */}
+      {selectedAngle && !draft && (
+        <button
+          onClick={handleGenerateDraft}
+          disabled={generateDraft.isPending}
+          className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 disabled:opacity-50"
+        >
+          {generateDraft.isPending ? 'Generating draft...' : 'Generate Draft'}
+        </button>
       )}
 
       {/* Draft Section */}
@@ -219,7 +327,7 @@ function SourceDetailPage() {
               disabled={updateDraft.isPending}
               className="px-4 py-2 bg-gray-600 text-white rounded-md text-sm hover:bg-gray-700 disabled:opacity-50"
             >
-              Save
+              {saved ? 'Saved!' : 'Save'}
             </button>
             <button
               onClick={handleCopy}
