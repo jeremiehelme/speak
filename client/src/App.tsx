@@ -8,6 +8,7 @@ import ProfilePage from './pages/ProfilePage';
 import OnboardingPage from './pages/OnboardingPage';
 import CapturePage from './pages/CapturePage';
 import SourceDetailPage from './pages/SourceDetailPage';
+import QueuePage from './pages/QueuePage';
 
 const queryClient = new QueryClient();
 
@@ -40,6 +41,7 @@ function AppRoutes() {
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/capture" element={<CapturePage />} />
         <Route path="/source/:id" element={<SourceDetailPage />} />
+        <Route path="/queue" element={<QueuePage />} />
         <Route path="/onboarding" element={<OnboardingPage />} />
       </Routes>
     </OnboardingGuard>
@@ -62,6 +64,9 @@ function App() {
                 </a>
                 <a href="/capture" className="text-sm text-gray-600 hover:text-gray-900">
                   Capture
+                </a>
+                <a href="/queue" className="text-sm text-gray-600 hover:text-gray-900">
+                  Queue
                 </a>
                 <a href="/profile" className="text-sm text-gray-600 hover:text-gray-900">
                   Profile

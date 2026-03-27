@@ -77,6 +77,18 @@ export function useQueue() {
   });
 }
 
+export function useRescheduleDraft() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ draftId, scheduledAt }: { draftId: number; scheduledAt: number }) =>
+      apiPut<Draft>(`/drafts/${draftId}/reschedule`, { scheduledAt }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['queue'] });
+      queryClient.invalidateQueries({ queryKey: ['source'] });
+    },
+  });
+}
+
 export function useRegenerateDraft() {
   const queryClient = useQueryClient();
   return useMutation({

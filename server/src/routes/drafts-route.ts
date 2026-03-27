@@ -187,11 +187,51 @@ export function createDraftsRouter(db: Kysely<Database>): Router {
     }
   });
 
-  // GET /api/queue — get all queued drafts
+  // GET /api/queue — get all queued, published, and failed drafts
   router.get('/queue', async (_req, res, next) => {
     try {
-      const drafts = await queueService.getQueuedDrafts();
+      const drafts = await db
+        .selectFrom('drafts')
+        .selectAll()
+        .where('published_status', 'is not', null)
+        .orderBy('scheduled_at', 'asc')
+        .execute();
       res.json({ data: drafts });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // PUT /api/drafts/:id/reschedule — change scheduled time
+  router.put('/drafts/:id/reschedule', async (req, res, next) => {
+    try {
+      const draftId = parseInt(req.params['id']!, 10);
+      const { scheduledAt } = req.body as { scheduledAt: number };
+
+      if (!scheduledAt || typeof scheduledAt !== 'number') {
+        res.status(400).json({
+          error: { code: 'INVALID_TIME', message: 'scheduledAt (unix timestamp) is required' },
+        });
+        return;
+      }
+
+      await db
+        .updateTable('drafts')
+        .set({
+          scheduled_at: scheduledAt,
+          published_status: 'queued',
+          updated_at: Math.floor(Date.now() / 1000),
+        })
+        .where('id', '=', draftId)
+        .execute();
+
+      const draft = await db
+        .selectFrom('drafts')
+        .selectAll()
+        .where('id', '=', draftId)
+        .executeTakeFirstOrThrow();
+
+      res.json({ data: draft });
     } catch (err) {
       next(err);
     }
