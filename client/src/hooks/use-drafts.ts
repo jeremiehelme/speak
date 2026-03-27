@@ -1,5 +1,5 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiPost, apiPut } from '../lib/api-client';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { apiGet, apiPost, apiPut } from '../lib/api-client';
 
 export interface Draft {
   id: number;
@@ -11,6 +11,7 @@ export interface Draft {
   published_status: string | null;
   published_url: string | null;
   published_at: number | null;
+  scheduled_at: number | null;
   created_at: number;
   updated_at: number;
 }
@@ -44,6 +45,35 @@ export function usePublishDraft() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['source'] });
     },
+  });
+}
+
+export function useScheduleDraft() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (draftId: number) => apiPost<Draft>(`/drafts/${draftId}/schedule`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['source'] });
+      queryClient.invalidateQueries({ queryKey: ['queue'] });
+    },
+  });
+}
+
+export function useUnscheduleDraft() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (draftId: number) => apiPost<Draft>(`/drafts/${draftId}/unschedule`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['source'] });
+      queryClient.invalidateQueries({ queryKey: ['queue'] });
+    },
+  });
+}
+
+export function useQueue() {
+  return useQuery<Draft[]>({
+    queryKey: ['queue'],
+    queryFn: () => apiGet<Draft[]>('/queue'),
   });
 }
 

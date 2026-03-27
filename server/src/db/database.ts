@@ -12,9 +12,13 @@ class CustomMigrationProvider implements MigrationProvider {
   async getMigrations(): Promise<Record<string, Migration>> {
     const migration001 = await import('./migrations/001-initial-schema.js');
     const migration002 = await import('./migrations/002-add-targeted-questions.js');
+    const migration003 = await import('./migrations/003-add-draft-publishing-fields.js');
+    const migration004 = await import('./migrations/004-add-draft-scheduled-at.js');
     return {
       '001-initial-schema': migration001,
       '002-add-targeted-questions': migration002,
+      '003-add-draft-publishing-fields': migration003,
+      '004-add-draft-scheduled-at': migration004,
     };
   }
 }

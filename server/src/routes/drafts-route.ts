@@ -4,6 +4,8 @@ import type { Database } from '../db/types.js';
 import { DraftService } from '../services/draft-service.js';
 import { SettingsService } from '../services/settings-service.js';
 import { XPublishingService } from '../services/x-publishing-service.js';
+import { QueueService } from '../services/queue-service.js';
+import { ScheduleService } from '../services/schedule-service.js';
 import { createLlmProvider } from '../llm/index.js';
 
 export function createDraftsRouter(db: Kysely<Database>): Router {
@@ -11,6 +13,8 @@ export function createDraftsRouter(db: Kysely<Database>): Router {
   const settingsService = new SettingsService(db);
   const draftService = new DraftService(db, settingsService);
   const xPublishing = new XPublishingService(settingsService);
+  const scheduleService = new ScheduleService(settingsService);
+  const queueService = new QueueService(db, scheduleService);
 
   // POST /api/sources/:id/drafts — generate a draft for a source
   router.post('/sources/:id/drafts', async (req, res, next) => {
@@ -156,6 +160,38 @@ export function createDraftsRouter(db: Kysely<Database>): Router {
         .executeTakeFirstOrThrow();
 
       res.json({ data: updated });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // POST /api/drafts/:id/schedule — queue a draft for scheduled publishing
+  router.post('/drafts/:id/schedule', async (req, res, next) => {
+    try {
+      const draftId = parseInt(req.params['id']!, 10);
+      const draft = await queueService.queueDraft(draftId);
+      res.json({ data: draft });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // POST /api/drafts/:id/unschedule — remove draft from queue
+  router.post('/drafts/:id/unschedule', async (req, res, next) => {
+    try {
+      const draftId = parseInt(req.params['id']!, 10);
+      const draft = await queueService.unqueueDraft(draftId);
+      res.json({ data: draft });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // GET /api/queue — get all queued drafts
+  router.get('/queue', async (_req, res, next) => {
+    try {
+      const drafts = await queueService.getQueuedDrafts();
+      res.json({ data: drafts });
     } catch (err) {
       next(err);
     }

@@ -14,6 +14,7 @@ import {
   useUpdateDraft,
   useRegenerateDraft,
   usePublishDraft,
+  useScheduleDraft,
   type Draft,
 } from '../hooks/use-drafts';
 import { useSettings } from '../hooks/use-settings';
@@ -27,6 +28,7 @@ function SourceDetailPage() {
   const updateDraft = useUpdateDraft();
   const regenerateDraft = useRegenerateDraft();
   const publishDraft = usePublishDraft();
+  const scheduleDraft = useScheduleDraft();
   const deleteSource = useDeleteSource();
   const retryAnalysis = useRetryAnalysis();
   const saveAnswers = useSaveAnswers();
@@ -432,12 +434,44 @@ function SourceDetailPage() {
                 Publish to X
               </span>
             )}
+
+            {draft?.published_status !== 'published' && draft?.published_status !== 'queued' && (
+              <button
+                onClick={async () => {
+                  if (!draft) return;
+                  try {
+                    const result = await scheduleDraft.mutateAsync(draft.id);
+                    setDraft(result);
+                  } catch {
+                    // error surfaced by mutation state
+                  }
+                }}
+                disabled={
+                  scheduleDraft.isPending || !draft || draftContent.length > 280 || !draftContent
+                }
+                className="px-4 py-2 bg-purple-600 text-white rounded-md text-sm hover:bg-purple-700 disabled:opacity-50"
+              >
+                {scheduleDraft.isPending ? 'Scheduling...' : 'Schedule'}
+              </button>
+            )}
           </div>
+          {draft?.published_status === 'queued' && draft?.scheduled_at && (
+            <p className="text-sm text-purple-600">
+              Scheduled for {new Date(draft.scheduled_at * 1000).toLocaleString()}
+            </p>
+          )}
           {publishDraft.isError && (
             <p className="text-sm text-red-600">
               {publishDraft.error instanceof Error
                 ? publishDraft.error.message
                 : 'Failed to publish'}
+            </p>
+          )}
+          {scheduleDraft.isError && (
+            <p className="text-sm text-red-600">
+              {scheduleDraft.error instanceof Error
+                ? scheduleDraft.error.message
+                : 'Failed to schedule'}
             </p>
           )}
 
