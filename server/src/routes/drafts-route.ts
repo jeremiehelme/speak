@@ -237,5 +237,69 @@ export function createDraftsRouter(db: Kysely<Database>): Router {
     }
   });
 
+  // POST /api/drafts/:id/translate — translate draft content to another language
+  router.post('/drafts/:id/translate', async (req, res, next) => {
+    try {
+      const draftId = parseInt(req.params['id']!, 10);
+      const { language } = req.body as { language?: string };
+
+      if (!language) {
+        res.status(400).json({
+          error: { code: 'MISSING_LANGUAGE', message: 'language is required' },
+        });
+        return;
+      }
+
+      const draft = await db
+        .selectFrom('drafts')
+        .selectAll()
+        .where('id', '=', draftId)
+        .executeTakeFirst();
+
+      if (!draft) {
+        res.status(404).json({
+          error: { code: 'DRAFT_NOT_FOUND', message: 'Draft not found' },
+        });
+        return;
+      }
+
+      if (!draft.content) {
+        res.status(400).json({
+          error: { code: 'EMPTY_DRAFT', message: 'Draft has no content to translate' },
+        });
+        return;
+      }
+
+      const apiKey = await settingsService.getAnthropicApiKey();
+      if (!apiKey) {
+        res.status(400).json({
+          error: { code: 'NO_API_KEY', message: 'API key not configured' },
+        });
+        return;
+      }
+
+      const provider = createLlmProvider(apiKey);
+      const draftingModel = (await settingsService.get('drafting_model')) || 'claude-sonnet-4-6';
+
+      const response = await provider.complete({
+        model: draftingModel,
+        system:
+          'You are a professional translator. Translate the given social media post to the target language. Preserve the tone, style, and formatting. Keep it concise for social media. Return ONLY the translated text, nothing else.',
+        messages: [
+          {
+            role: 'user',
+            content: `Translate the following post to ${language}:\n\n${draft.content}`,
+          },
+        ],
+        maxTokens: 512,
+      });
+
+      const translated = response.content.trim();
+      res.json({ data: { translated } });
+    } catch (err) {
+      next(err);
+    }
+  });
+
   return router;
 }

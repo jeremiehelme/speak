@@ -15,6 +15,7 @@ import {
   useRegenerateDraft,
   usePublishDraft,
   useScheduleDraft,
+  useTranslateDraft,
   type Draft,
 } from '../hooks/use-drafts';
 import { useSettings } from '../hooks/use-settings';
@@ -29,6 +30,7 @@ function SourceDetailPage() {
   const regenerateDraft = useRegenerateDraft();
   const publishDraft = usePublishDraft();
   const scheduleDraft = useScheduleDraft();
+  const translateDraft = useTranslateDraft();
   const deleteSource = useDeleteSource();
   const retryAnalysis = useRetryAnalysis();
   const saveAnswers = useSaveAnswers();
@@ -384,6 +386,35 @@ function SourceDetailPage() {
             >
               {draftContent.length}/280
             </span>
+            <div className="flex items-center gap-1">
+              <select
+                onChange={async (e) => {
+                  const lang = e.target.value;
+                  if (!lang || !draft) return;
+                  e.target.value = '';
+                  try {
+                    const result = await translateDraft.mutateAsync({
+                      draftId: draft.id,
+                      language: lang,
+                    });
+                    setDraftContent(result.translated);
+                  } catch {
+                    // error surfaced by mutation state
+                  }
+                }}
+                disabled={translateDraft.isPending || !draft}
+                className="text-xs border border-gray-300 rounded px-2 py-1 text-gray-600"
+                defaultValue=""
+              >
+                <option value="" disabled>
+                  {translateDraft.isPending ? 'Translating...' : 'Translate to...'}
+                </option>
+                <option value="English">English</option>
+                <option value="French">French</option>
+                <option value="Spanish">Spanish</option>
+                <option value="German">German</option>
+              </select>
+            </div>
           </div>
           <div className="flex gap-2 flex-wrap">
             <button

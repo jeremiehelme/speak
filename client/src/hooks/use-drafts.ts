@@ -106,3 +106,10 @@ export function useRegenerateDraft() {
     },
   });
 }
+
+export function useTranslateDraft() {
+  return useMutation({
+    mutationFn: ({ draftId, language }: { draftId: number; language: string }) =>
+      apiPost<{ translated: string }>(`/drafts/${draftId}/translate`, { language }),
+  });
+}
