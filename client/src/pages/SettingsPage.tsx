@@ -4,6 +4,8 @@ import {
   useUpdateSettings,
   useValidateApiKey,
   useBookmarklet,
+  useSaveXCredentials,
+  useValidateXConnection,
 } from '../hooks/use-settings';
 
 function SettingsPage() {
@@ -11,10 +13,20 @@ function SettingsPage() {
   const { data: bookmarkletData } = useBookmarklet();
   const updateSettings = useUpdateSettings();
   const validateKey = useValidateApiKey();
+  const saveXCreds = useSaveXCredentials();
+  const validateX = useValidateXConnection();
   const [apiKey, setApiKey] = useState('');
   const [analysisModel, setAnalysisModel] = useState('');
   const [draftingModel, setDraftingModel] = useState('');
   const [validationResult, setValidationResult] = useState<{
+    valid: boolean;
+    message?: string;
+  } | null>(null);
+  const [xApiKey, setXApiKey] = useState('');
+  const [xApiSecret, setXApiSecret] = useState('');
+  const [xAccessToken, setXAccessToken] = useState('');
+  const [xAccessTokenSecret, setXAccessTokenSecret] = useState('');
+  const [xValidationResult, setXValidationResult] = useState<{
     valid: boolean;
     message?: string;
   } | null>(null);
@@ -40,6 +52,36 @@ function SettingsPage() {
     if (Object.keys(updates).length > 0) {
       await updateSettings.mutateAsync(updates);
     }
+  };
+
+  const xCredsComplete =
+    xApiKey.trim() && xApiSecret.trim() && xAccessToken.trim() && xAccessTokenSecret.trim();
+
+  const handleSaveXCredentials = async () => {
+    if (!xCredsComplete) return;
+    await saveXCreds.mutateAsync({
+      apiKey: xApiKey.trim(),
+      apiSecret: xApiSecret.trim(),
+      accessToken: xAccessToken.trim(),
+      accessTokenSecret: xAccessTokenSecret.trim(),
+    });
+    setXApiKey('');
+    setXApiSecret('');
+    setXAccessToken('');
+    setXAccessTokenSecret('');
+  };
+
+  const handleValidateX = async () => {
+    const creds = xCredsComplete
+      ? {
+          apiKey: xApiKey.trim(),
+          apiSecret: xApiSecret.trim(),
+          accessToken: xAccessToken.trim(),
+          accessTokenSecret: xAccessTokenSecret.trim(),
+        }
+      : undefined;
+    const result = await validateX.mutateAsync(creds);
+    setXValidationResult(result);
   };
 
   return (
@@ -84,6 +126,85 @@ function SettingsPage() {
             {validationResult.valid
               ? 'API key is valid!'
               : validationResult.message || 'API key is invalid'}
+          </p>
+        )}
+      </section>
+
+      {/* X (Twitter) API Credentials */}
+      <section className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">X (Twitter) API Credentials</h2>
+        <p className="text-sm text-gray-600 mb-4">
+          {settings?.hasXCredentials
+            ? 'X credentials are configured. Enter new credentials to replace them.'
+            : 'Connect your X account to publish posts directly from Speak.'}
+        </p>
+        <div className="space-y-3">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">API Key</label>
+            <input
+              type="password"
+              value={xApiKey}
+              onChange={(e) => setXApiKey(e.target.value)}
+              placeholder="API Key"
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">API Secret</label>
+            <input
+              type="password"
+              value={xApiSecret}
+              onChange={(e) => setXApiSecret(e.target.value)}
+              placeholder="API Secret"
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Access Token</label>
+            <input
+              type="password"
+              value={xAccessToken}
+              onChange={(e) => setXAccessToken(e.target.value)}
+              placeholder="Access Token"
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">
+              Access Token Secret
+            </label>
+            <input
+              type="password"
+              value={xAccessTokenSecret}
+              onChange={(e) => setXAccessTokenSecret(e.target.value)}
+              placeholder="Access Token Secret"
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+            />
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={handleSaveXCredentials}
+              disabled={!xCredsComplete || saveXCreds.isPending}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 disabled:opacity-50"
+            >
+              {saveXCreds.isPending ? 'Saving...' : 'Save Credentials'}
+            </button>
+            <button
+              onClick={handleValidateX}
+              disabled={validateX.isPending}
+              className="px-4 py-2 bg-gray-600 text-white rounded-md text-sm hover:bg-gray-700 disabled:opacity-50"
+            >
+              {validateX.isPending ? 'Validating...' : 'Validate Connection'}
+            </button>
+          </div>
+        </div>
+        {xValidationResult && (
+          <p
+            className={`mt-2 text-sm ${xValidationResult.valid ? 'text-green-600' : 'text-red-600'}`}
+          >
+            {xValidationResult.valid
+              ? 'X connection is valid!'
+              : xValidationResult.message || 'X credentials are invalid'}
           </p>
         )}
       </section>

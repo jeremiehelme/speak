@@ -3,19 +3,21 @@ import type { Kysely } from 'kysely';
 import type { Database } from '../db/types.js';
 import { SettingsService } from '../services/settings-service.js';
 import { BookmarkletService } from '../services/bookmarklet-service.js';
+import { XPublishingService } from '../services/x-publishing-service.js';
 
 export function createSettingsRouter(db: Kysely<Database>): Router {
   const router = Router();
   const settings = new SettingsService(db);
   const bookmarklet = new BookmarkletService(settings);
+  const xPublishing = new XPublishingService(settings);
 
-  // GET /api/settings — public settings (no API key)
+  // GET /api/settings — public settings (no secrets)
   router.get('/', async (_req, res, next) => {
     try {
       const data = await settings.getPublicSettings();
-      // Include whether API key is configured (but not the value)
       const hasApiKey = !!(await settings.getAnthropicApiKey());
-      res.json({ data: { ...data, hasApiKey } });
+      const hasXCredentials = await xPublishing.hasCredentials();
+      res.json({ data: { ...data, hasApiKey, hasXCredentials } });
     } catch (err) {
       next(err);
     }
@@ -86,6 +88,56 @@ export function createSettingsRouter(db: Kysely<Database>): Router {
     try {
       const code = await bookmarklet.generateBookmarkletCode();
       res.json({ data: { code } });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // PUT /api/settings/x-credentials — save X API credentials
+  router.put('/x-credentials', async (req, res, next) => {
+    try {
+      const { apiKey, apiSecret, accessToken, accessTokenSecret } = req.body as {
+        apiKey?: string;
+        apiSecret?: string;
+        accessToken?: string;
+        accessTokenSecret?: string;
+      };
+
+      if (!apiKey || !apiSecret || !accessToken || !accessTokenSecret) {
+        res.status(400).json({
+          error: {
+            code: 'MISSING_CREDENTIALS',
+            message: 'All four X API credentials are required',
+          },
+        });
+        return;
+      }
+
+      await xPublishing.saveCredentials({ apiKey, apiSecret, accessToken, accessTokenSecret });
+      const hasXCredentials = await xPublishing.hasCredentials();
+      res.json({ data: { hasXCredentials } });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // POST /api/settings/validate-x — validate X API credentials
+  router.post('/validate-x', async (req, res, next) => {
+    try {
+      const { apiKey, apiSecret, accessToken, accessTokenSecret } = req.body as {
+        apiKey?: string;
+        apiSecret?: string;
+        accessToken?: string;
+        accessTokenSecret?: string;
+      };
+
+      const creds =
+        apiKey && apiSecret && accessToken && accessTokenSecret
+          ? { apiKey, apiSecret, accessToken, accessTokenSecret }
+          : undefined;
+
+      const result = await xPublishing.validateCredentials(creds);
+      res.json({ data: result });
     } catch (err) {
       next(err);
     }

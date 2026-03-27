@@ -44,8 +44,12 @@ export class SettingsService {
 
   async getPublicSettings(): Promise<Record<string, string>> {
     const all = await this.getAll();
-    // Never expose the API key to frontend
+    // Never expose secrets to frontend
     delete all['anthropic_api_key'];
+    delete all['x_api_key'];
+    delete all['x_api_secret'];
+    delete all['x_access_token'];
+    delete all['x_access_token_secret'];
     return all;
   }
 }

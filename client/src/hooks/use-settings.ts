@@ -3,6 +3,7 @@ import { apiGet, apiPut, apiPost } from '../lib/api-client';
 
 interface Settings {
   hasApiKey: boolean;
+  hasXCredentials: boolean;
   analysis_model?: string;
   drafting_model?: string;
   app_url?: string;
@@ -12,6 +13,13 @@ interface Settings {
 interface ValidationResult {
   valid: boolean;
   message?: string;
+}
+
+interface XCredentials {
+  apiKey: string;
+  apiSecret: string;
+  accessToken: string;
+  accessTokenSecret: string;
 }
 
 export function useSettings() {
@@ -41,5 +49,23 @@ export function useBookmarklet() {
   return useQuery<{ code: string }>({
     queryKey: ['bookmarklet'],
     queryFn: () => apiGet<{ code: string }>('/settings/bookmarklet'),
+  });
+}
+
+export function useSaveXCredentials() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (creds: XCredentials) =>
+      apiPut<{ hasXCredentials: boolean }>('/settings/x-credentials', creds),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['settings'] });
+    },
+  });
+}
+
+export function useValidateXConnection() {
+  return useMutation({
+    mutationFn: (creds?: XCredentials) =>
+      apiPost<ValidationResult>('/settings/validate-x', creds ?? {}),
   });
 }
