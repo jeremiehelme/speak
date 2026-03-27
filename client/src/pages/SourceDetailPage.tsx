@@ -13,8 +13,10 @@ import {
   useGenerateDraft,
   useUpdateDraft,
   useRegenerateDraft,
+  usePublishDraft,
   type Draft,
 } from '../hooks/use-drafts';
+import { useSettings } from '../hooks/use-settings';
 
 function SourceDetailPage() {
   const { id } = useParams();
@@ -24,10 +26,12 @@ function SourceDetailPage() {
   const generateDraft = useGenerateDraft();
   const updateDraft = useUpdateDraft();
   const regenerateDraft = useRegenerateDraft();
+  const publishDraft = usePublishDraft();
   const deleteSource = useDeleteSource();
   const retryAnalysis = useRetryAnalysis();
   const saveAnswers = useSaveAnswers();
   const updateSource = useUpdateSource();
+  const { data: settings } = useSettings();
   const [editingTitle, setEditingTitle] = useState(false);
 
   const [angles, setAngles] = useState<Angle[]>([]);
@@ -372,7 +376,14 @@ function SourceDetailPage() {
             rows={4}
             className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
           />
-          <div className="flex gap-2">
+          <div className="flex items-center justify-between">
+            <span
+              className={`text-xs ${draftContent.length > 280 ? 'text-red-600 font-semibold' : 'text-gray-400'}`}
+            >
+              {draftContent.length}/280
+            </span>
+          </div>
+          <div className="flex gap-2 flex-wrap">
             <button
               onClick={handleSaveDraft}
               disabled={updateDraft.isPending}
@@ -386,7 +397,49 @@ function SourceDetailPage() {
             >
               {copied ? 'Copied!' : 'Copy to Clipboard'}
             </button>
+            {draft?.published_status === 'published' && draft?.published_url ? (
+              <a
+                href={draft.published_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 bg-green-600 text-white rounded-md text-sm hover:bg-green-700 inline-flex items-center gap-1"
+              >
+                Published — View on X
+              </a>
+            ) : settings?.hasXCredentials ? (
+              <button
+                onClick={async () => {
+                  if (!draft) return;
+                  try {
+                    const result = await publishDraft.mutateAsync(draft.id);
+                    setDraft(result);
+                  } catch {
+                    // error is surfaced by mutation state
+                  }
+                }}
+                disabled={
+                  publishDraft.isPending || !draft || draftContent.length > 280 || !draftContent
+                }
+                className="px-4 py-2 bg-black text-white rounded-md text-sm hover:bg-gray-800 disabled:opacity-50"
+              >
+                {publishDraft.isPending ? 'Publishing...' : 'Publish to X'}
+              </button>
+            ) : (
+              <span
+                className="px-4 py-2 bg-gray-200 text-gray-500 rounded-md text-sm cursor-not-allowed"
+                title="Connect X account in Settings"
+              >
+                Publish to X
+              </span>
+            )}
           </div>
+          {publishDraft.isError && (
+            <p className="text-sm text-red-600">
+              {publishDraft.error instanceof Error
+                ? publishDraft.error.message
+                : 'Failed to publish'}
+            </p>
+          )}
 
           {/* Regeneration */}
           <div className="border-t pt-4 space-y-2">

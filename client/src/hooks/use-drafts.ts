@@ -8,6 +8,9 @@ export interface Draft {
   content: string | null;
   feedback: string | null;
   status: string;
+  published_status: string | null;
+  published_url: string | null;
+  published_at: number | null;
   created_at: number;
   updated_at: number;
 }
@@ -28,6 +31,16 @@ export function useUpdateDraft() {
   return useMutation({
     mutationFn: ({ draftId, content }: { draftId: number; content: string }) =>
       apiPut<Draft>(`/drafts/${draftId}`, { content }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['source'] });
+    },
+  });
+}
+
+export function usePublishDraft() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (draftId: number) => apiPost<Draft>(`/drafts/${draftId}/publish`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['source'] });
     },
