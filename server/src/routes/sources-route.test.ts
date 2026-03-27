@@ -11,7 +11,10 @@ describe('Sources (database operations)', () => {
   let dbPath: string;
 
   beforeEach(async () => {
-    dbPath = path.join(os.tmpdir(), `speak-test-${Date.now()}-${Math.random().toString(36).slice(2)}.db`);
+    dbPath = path.join(
+      os.tmpdir(),
+      `speak-test-${Date.now()}-${Math.random().toString(36).slice(2)}.db`,
+    );
     db = createDatabase(dbPath);
     await migrateDatabase(db);
   });
@@ -22,8 +25,14 @@ describe('Sources (database operations)', () => {
   });
 
   it('should list sources ordered by created_at desc', async () => {
-    await db.insertInto('sources').values({ title: 'First', analysis_status: 'complete' }).execute();
-    await db.insertInto('sources').values({ title: 'Second', analysis_status: 'complete' }).execute();
+    await db
+      .insertInto('sources')
+      .values({ title: 'First', analysis_status: 'complete' })
+      .execute();
+    await db
+      .insertInto('sources')
+      .values({ title: 'Second', analysis_status: 'complete' })
+      .execute();
 
     const sources = await db.selectFrom('sources').selectAll().orderBy('id', 'desc').execute();
     expect(sources).toHaveLength(2);
@@ -31,11 +40,19 @@ describe('Sources (database operations)', () => {
   });
 
   it('should search sources by title', async () => {
-    await db.insertInto('sources').values({ title: 'AI Agents Guide', analysis_status: 'complete' }).execute();
-    await db.insertInto('sources').values({ title: 'React Basics', analysis_status: 'complete' }).execute();
+    await db
+      .insertInto('sources')
+      .values({ title: 'AI Agents Guide', analysis_status: 'complete' })
+      .execute();
+    await db
+      .insertInto('sources')
+      .values({ title: 'React Basics', analysis_status: 'complete' })
+      .execute();
 
     const term = '%AI%';
-    const sources = await db.selectFrom('sources').selectAll()
+    const sources = await db
+      .selectFrom('sources')
+      .selectAll()
       .where('title', 'like', term)
       .execute();
     expect(sources).toHaveLength(1);
@@ -45,17 +62,23 @@ describe('Sources (database operations)', () => {
   it('should delete a source and cascade drafts', async () => {
     await sql`PRAGMA foreign_keys = ON`.execute(db);
 
-    const sourceResult = await db.insertInto('sources').values({
-      title: 'To Delete',
-      analysis_status: 'complete',
-    }).executeTakeFirstOrThrow();
+    const sourceResult = await db
+      .insertInto('sources')
+      .values({
+        title: 'To Delete',
+        analysis_status: 'complete',
+      })
+      .executeTakeFirstOrThrow();
     const sourceId = Number(sourceResult.insertId);
 
-    await db.insertInto('drafts').values({
-      source_id: sourceId,
-      content: 'Draft content',
-      status: 'draft',
-    }).execute();
+    await db
+      .insertInto('drafts')
+      .values({
+        source_id: sourceId,
+        content: 'Draft content',
+        status: 'draft',
+      })
+      .execute();
 
     await db.deleteFrom('sources').where('id', '=', sourceId).execute();
 

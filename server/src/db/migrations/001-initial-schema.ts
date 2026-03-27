@@ -3,7 +3,8 @@ import { sql } from 'kysely';
 
 export async function up(db: Kysely<unknown>): Promise<void> {
   await db.schema
-    .createTable('sources').ifNotExists()
+    .createTable('sources')
+    .ifNotExists()
     .addColumn('id', 'integer', (col) => col.primaryKey().autoIncrement())
     .addColumn('url', 'text')
     .addColumn('title', 'text')
@@ -21,9 +22,12 @@ export async function up(db: Kysely<unknown>): Promise<void> {
     .execute();
 
   await db.schema
-    .createTable('drafts').ifNotExists()
+    .createTable('drafts')
+    .ifNotExists()
     .addColumn('id', 'integer', (col) => col.primaryKey().autoIncrement())
-    .addColumn('source_id', 'integer', (col) => col.notNull().references('sources.id').onDelete('cascade'))
+    .addColumn('source_id', 'integer', (col) =>
+      col.notNull().references('sources.id').onDelete('cascade'),
+    )
     .addColumn('angle', 'text')
     .addColumn('content', 'text')
     .addColumn('feedback', 'text')
@@ -33,7 +37,8 @@ export async function up(db: Kysely<unknown>): Promise<void> {
     .execute();
 
   await db.schema
-    .createTable('voice_profiles').ifNotExists()
+    .createTable('voice_profiles')
+    .ifNotExists()
     .addColumn('id', 'integer', (col) => col.primaryKey().autoIncrement())
     .addColumn('voice_description', 'text')
     .addColumn('example_posts', 'text')
@@ -43,7 +48,8 @@ export async function up(db: Kysely<unknown>): Promise<void> {
     .execute();
 
   await db.schema
-    .createTable('settings').ifNotExists()
+    .createTable('settings')
+    .ifNotExists()
     .addColumn('id', 'integer', (col) => col.primaryKey().autoIncrement())
     .addColumn('key', 'text', (col) => col.notNull().unique())
     .addColumn('value', 'text', (col) => col.notNull())

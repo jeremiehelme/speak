@@ -1,7 +1,20 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useSource, useGenerateAngles, useDeleteSource, useRetryAnalysis, useSaveAnswers, useUpdateSource, type Angle } from '../hooks/use-sources';
-import { useGenerateDraft, useUpdateDraft, useRegenerateDraft, type Draft } from '../hooks/use-drafts';
+import {
+  useSource,
+  useGenerateAngles,
+  useDeleteSource,
+  useRetryAnalysis,
+  useSaveAnswers,
+  useUpdateSource,
+  type Angle,
+} from '../hooks/use-sources';
+import {
+  useGenerateDraft,
+  useUpdateDraft,
+  useRegenerateDraft,
+  type Draft,
+} from '../hooks/use-drafts';
 
 function SourceDetailPage() {
   const { id } = useParams();
@@ -28,16 +41,15 @@ function SourceDetailPage() {
   const [answers, setAnswers] = useState<string[]>([]);
   const answersInitialized = useRef(false);
 
-  // Restore most recent draft from DB on page load
   useEffect(() => {
     if (source?.drafts && source.drafts.length > 0 && !draft) {
       const mostRecent = source.drafts[0] as Draft;
       setDraft(mostRecent);
       setDraftContent(mostRecent.content || '');
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [source?.drafts]);
 
-  // Load stored angles from source when available
   useEffect(() => {
     if (source?.angles && angles.length === 0) {
       try {
@@ -52,13 +64,15 @@ function SourceDetailPage() {
         // ignore parse errors
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [source?.angles]);
 
-  // Initialize answers from source
   useEffect(() => {
     if (source?.targeted_questions && !answersInitialized.current) {
       const questions = JSON.parse(source.targeted_questions) as string[];
-      const stored = source.targeted_answers ? JSON.parse(source.targeted_answers) as string[] : [];
+      const stored = source.targeted_answers
+        ? (JSON.parse(source.targeted_answers) as string[])
+        : [];
       setAnswers(questions.map((_, i) => stored[i] || ''));
       answersInitialized.current = true;
     }
@@ -69,11 +83,25 @@ function SourceDetailPage() {
   if (!source) return <div className="text-gray-500">Source not found</div>;
 
   let themes: string[] = [];
-  try { themes = source.themes ? JSON.parse(source.themes) as string[] : []; } catch { /* ignore */ }
+  try {
+    themes = source.themes ? (JSON.parse(source.themes) as string[]) : [];
+  } catch {
+    /* ignore */
+  }
   let takeaways: string[] = [];
-  try { takeaways = source.takeaways ? JSON.parse(source.takeaways) as string[] : []; } catch { /* ignore */ }
+  try {
+    takeaways = source.takeaways ? (JSON.parse(source.takeaways) as string[]) : [];
+  } catch {
+    /* ignore */
+  }
   let targetedQuestions: string[] = [];
-  try { targetedQuestions = source.targeted_questions ? JSON.parse(source.targeted_questions) as string[] : []; } catch { /* ignore */ }
+  try {
+    targetedQuestions = source.targeted_questions
+      ? (JSON.parse(source.targeted_questions) as string[])
+      : [];
+  } catch {
+    /* ignore */
+  }
 
   const handleGenerateAngles = async (count: number) => {
     const result = await generateAngles.mutateAsync({ sourceId: source.id, count });
@@ -169,14 +197,29 @@ function SourceDetailPage() {
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <p className="text-sm text-red-800">Delete this source and all its drafts?</p>
           <div className="flex gap-2 mt-2">
-            <button onClick={handleDelete} className="px-3 py-1 bg-red-600 text-white rounded-md text-sm">Confirm</button>
-            <button onClick={() => setShowDeleteConfirm(false)} className="px-3 py-1 bg-gray-200 rounded-md text-sm">Cancel</button>
+            <button
+              onClick={handleDelete}
+              className="px-3 py-1 bg-red-600 text-white rounded-md text-sm"
+            >
+              Confirm
+            </button>
+            <button
+              onClick={() => setShowDeleteConfirm(false)}
+              className="px-3 py-1 bg-gray-200 rounded-md text-sm"
+            >
+              Cancel
+            </button>
           </div>
         </div>
       )}
 
       {source.url && (
-        <a href={source.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 text-sm hover:underline">
+        <a
+          href={source.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 text-sm hover:underline"
+        >
           {source.url}
         </a>
       )}
@@ -198,7 +241,12 @@ function SourceDetailPage() {
               <span className="text-xs font-medium text-gray-500">Themes:</span>
               <div className="flex gap-1 mt-1">
                 {themes.map((t: string) => (
-                  <span key={t} className="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full">{t}</span>
+                  <span
+                    key={t}
+                    className="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full"
+                  >
+                    {t}
+                  </span>
                 ))}
               </div>
             </div>
@@ -207,7 +255,9 @@ function SourceDetailPage() {
             <div>
               <span className="text-xs font-medium text-gray-500">Key Takeaways:</span>
               <ul className="list-disc list-inside text-sm text-gray-700 mt-1">
-                {takeaways.map((t: string, i: number) => <li key={i}>{t}</li>)}
+                {takeaways.map((t: string, i: number) => (
+                  <li key={i}>{t}</li>
+                ))}
               </ul>
             </div>
           )}
@@ -274,7 +324,6 @@ function SourceDetailPage() {
               )}
             </div>
           )}
-
         </section>
       )}
 
@@ -282,7 +331,9 @@ function SourceDetailPage() {
       {selectedAngle && targetedQuestions.length > 0 && (
         <section className="bg-white rounded-lg shadow p-6 space-y-4">
           <h2 className="text-lg font-semibold text-gray-900">Your Perspective</h2>
-          <p className="text-xs text-gray-500">Answer these questions to make your draft more authentic. Answers are optional.</p>
+          <p className="text-xs text-gray-500">
+            Answer these questions to make your draft more authentic. Answers are optional.
+          </p>
           <div className="space-y-4">
             {targetedQuestions.map((question, i) => (
               <div key={i}>

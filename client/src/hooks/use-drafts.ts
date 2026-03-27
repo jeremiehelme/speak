@@ -37,8 +37,15 @@ export function useUpdateDraft() {
 export function useRegenerateDraft() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ draftId, feedback, angle }: { draftId: number; feedback?: string; angle?: string }) =>
-      apiPost<Draft>(`/drafts/${draftId}/regenerate`, { feedback, angle }),
+    mutationFn: ({
+      draftId,
+      feedback,
+      angle,
+    }: {
+      draftId: number;
+      feedback?: string;
+      angle?: string;
+    }) => apiPost<Draft>(`/drafts/${draftId}/regenerate`, { feedback, angle }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['source'] });
     },

@@ -22,18 +22,12 @@ export class SettingsService {
         .where('key', '=', key)
         .execute();
     } else {
-      await this.db
-        .insertInto('settings')
-        .values({ key, value })
-        .execute();
+      await this.db.insertInto('settings').values({ key, value }).execute();
     }
   }
 
   async getAll(): Promise<Record<string, string>> {
-    const rows = await this.db
-      .selectFrom('settings')
-      .select(['key', 'value'])
-      .execute();
+    const rows = await this.db.selectFrom('settings').select(['key', 'value']).execute();
     const result: Record<string, string> = {};
     for (const row of rows) {
       result[row.key] = row.value;

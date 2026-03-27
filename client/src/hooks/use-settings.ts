@@ -24,8 +24,7 @@ export function useSettings() {
 export function useUpdateSettings() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (updates: Record<string, string>) =>
-      apiPut<Settings>('/settings', updates),
+    mutationFn: (updates: Record<string, string>) => apiPut<Settings>('/settings', updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['settings'] });
     },
@@ -34,8 +33,7 @@ export function useUpdateSettings() {
 
 export function useValidateApiKey() {
   return useMutation({
-    mutationFn: (apiKey: string) =>
-      apiPost<ValidationResult>('/settings/validate-key', { apiKey }),
+    mutationFn: (apiKey: string) => apiPost<ValidationResult>('/settings/validate-key', { apiKey }),
   });
 }
 

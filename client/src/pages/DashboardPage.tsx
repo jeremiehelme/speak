@@ -37,7 +37,9 @@ function DashboardPage() {
             </p>
           ) : (
             <div>
-              <p className="text-gray-600">No sources yet. Capture your first source to get started.</p>
+              <p className="text-gray-600">
+                No sources yet. Capture your first source to get started.
+              </p>
               <a
                 href="/capture"
                 className="inline-block mt-4 px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"

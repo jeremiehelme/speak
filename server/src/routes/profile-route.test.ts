@@ -11,7 +11,10 @@ describe('Profile (voice_profiles table)', () => {
   let dbPath: string;
 
   beforeEach(async () => {
-    dbPath = path.join(os.tmpdir(), `speak-test-${Date.now()}-${Math.random().toString(36).slice(2)}.db`);
+    dbPath = path.join(
+      os.tmpdir(),
+      `speak-test-${Date.now()}-${Math.random().toString(36).slice(2)}.db`,
+    );
     db = createDatabase(dbPath);
     await migrateDatabase(db);
   });
@@ -22,11 +25,14 @@ describe('Profile (voice_profiles table)', () => {
   });
 
   it('should create a voice profile', async () => {
-    await db.insertInto('voice_profiles').values({
-      voice_description: 'Direct, technical, no buzzwords',
-      example_posts: 'Post 1\n---\nPost 2',
-      general_opinions: 'AI hype is overblown',
-    }).execute();
+    await db
+      .insertInto('voice_profiles')
+      .values({
+        voice_description: 'Direct, technical, no buzzwords',
+        example_posts: 'Post 1\n---\nPost 2',
+        general_opinions: 'AI hype is overblown',
+      })
+      .execute();
 
     const profile = await db.selectFrom('voice_profiles').selectAll().executeTakeFirst();
     expect(profile).toBeDefined();
@@ -36,13 +42,17 @@ describe('Profile (voice_profiles table)', () => {
   });
 
   it('should update an existing profile', async () => {
-    await db.insertInto('voice_profiles').values({
-      voice_description: 'Original',
-    }).execute();
+    await db
+      .insertInto('voice_profiles')
+      .values({
+        voice_description: 'Original',
+      })
+      .execute();
 
     const profile = await db.selectFrom('voice_profiles').select('id').executeTakeFirstOrThrow();
 
-    await db.updateTable('voice_profiles')
+    await db
+      .updateTable('voice_profiles')
       .set({ voice_description: 'Updated' })
       .where('id', '=', profile.id)
       .execute();

@@ -10,7 +10,7 @@ import path from 'node:path';
 import os from 'node:os';
 
 class MockAngleProvider implements LlmProvider {
-  async complete(request: LlmRequest): Promise<LlmResponse> {
+  async complete(_request: LlmRequest): Promise<LlmResponse> {
     return {
       content: JSON.stringify([
         { title: 'The contrarian take', description: 'Challenge the mainstream narrative.' },
@@ -26,7 +26,10 @@ describe('AngleService', () => {
   let service: AngleService;
 
   beforeEach(async () => {
-    dbPath = path.join(os.tmpdir(), `speak-test-${Date.now()}-${Math.random().toString(36).slice(2)}.db`);
+    dbPath = path.join(
+      os.tmpdir(),
+      `speak-test-${Date.now()}-${Math.random().toString(36).slice(2)}.db`,
+    );
     db = createDatabase(dbPath);
     await migrateDatabase(db);
     const settingsService = new SettingsService(db);
@@ -39,12 +42,15 @@ describe('AngleService', () => {
   });
 
   it('should generate angles for an analyzed source', async () => {
-    const result = await db.insertInto('sources').values({
-      analysis_status: 'complete',
-      analysis_summary: 'An article about AI agents.',
-      themes: JSON.stringify(['AI', 'agents']),
-      takeaways: JSON.stringify(['Agents are useful']),
-    }).executeTakeFirstOrThrow();
+    const result = await db
+      .insertInto('sources')
+      .values({
+        analysis_status: 'complete',
+        analysis_summary: 'An article about AI agents.',
+        themes: JSON.stringify(['AI', 'agents']),
+        takeaways: JSON.stringify(['Agents are useful']),
+      })
+      .executeTakeFirstOrThrow();
     const sourceId = Number(result.insertId);
 
     const provider = new MockAngleProvider();
@@ -56,12 +62,17 @@ describe('AngleService', () => {
   });
 
   it('should throw if source is not analyzed', async () => {
-    const result = await db.insertInto('sources').values({
-      analysis_status: 'pending',
-    }).executeTakeFirstOrThrow();
+    const result = await db
+      .insertInto('sources')
+      .values({
+        analysis_status: 'pending',
+      })
+      .executeTakeFirstOrThrow();
     const sourceId = Number(result.insertId);
 
     const provider = new MockAngleProvider();
-    await expect(service.generateAngles(sourceId, provider)).rejects.toThrow('Source analysis not complete');
+    await expect(service.generateAngles(sourceId, provider)).rejects.toThrow(
+      'Source analysis not complete',
+    );
   });
 });

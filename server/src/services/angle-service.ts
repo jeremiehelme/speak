@@ -15,7 +15,11 @@ export class AngleService {
     private settingsService: SettingsService,
   ) {}
 
-  async generateAngles(sourceId: number, llmProvider: LlmProvider, count: number = 1): Promise<Angle[]> {
+  async generateAngles(
+    sourceId: number,
+    llmProvider: LlmProvider,
+    count: number = 1,
+  ): Promise<Angle[]> {
     const source = await this.db
       .selectFrom('sources')
       .selectAll()
@@ -25,7 +29,8 @@ export class AngleService {
     if (!source) throw new Error('Source not found');
     if (source.analysis_status !== 'complete') throw new Error('Source analysis not complete');
 
-    const analysisModel = (await this.settingsService.get('analysis_model')) || 'claude-haiku-4-5-20251001';
+    const analysisModel =
+      (await this.settingsService.get('analysis_model')) || 'claude-haiku-4-5-20251001';
 
     const prompt = loadPrompt('generate-angles.md', {
       summary: source.analysis_summary || '',
@@ -41,7 +46,10 @@ export class AngleService {
       maxTokens: 1024,
     });
 
-    const jsonText = response.content.replace(/^```(?:json)?\s*\n?/m, '').replace(/\n?```\s*$/m, '').trim();
+    const jsonText = response.content
+      .replace(/^```(?:json)?\s*\n?/m, '')
+      .replace(/\n?```\s*$/m, '')
+      .trim();
     const angles: Angle[] = JSON.parse(jsonText);
 
     if (!Array.isArray(angles)) {
@@ -75,7 +83,8 @@ export class AngleService {
 
     if (!source) throw new Error('Source not found');
 
-    const analysisModel = (await this.settingsService.get('analysis_model')) || 'claude-haiku-4-5-20251001';
+    const analysisModel =
+      (await this.settingsService.get('analysis_model')) || 'claude-haiku-4-5-20251001';
 
     const prompt = loadPrompt('generate-questions.md', {
       summary: source.analysis_summary || '',
@@ -89,7 +98,10 @@ export class AngleService {
       maxTokens: 512,
     });
 
-    const jsonText = response.content.replace(/^```(?:json)?\s*\n?/m, '').replace(/\n?```\s*$/m, '').trim();
+    const jsonText = response.content
+      .replace(/^```(?:json)?\s*\n?/m, '')
+      .replace(/\n?```\s*$/m, '')
+      .trim();
     const questions: string[] = JSON.parse(jsonText);
 
     if (!Array.isArray(questions) || !questions.every((q) => typeof q === 'string')) {

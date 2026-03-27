@@ -14,7 +14,7 @@ export class CaptureService {
   async capture(input: CaptureInput): Promise<Source> {
     let title: string | null = null;
     let extractedContent: string | null = null;
-    let rawText: string | null = input.text ?? null;
+    const rawText: string | null = input.text ?? null;
     let analysisStatus = 'pending';
 
     if (input.url) {

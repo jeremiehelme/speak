@@ -24,18 +24,24 @@ describe('DraftService', () => {
   let service: DraftService;
 
   beforeEach(async () => {
-    dbPath = path.join(os.tmpdir(), `speak-test-${Date.now()}-${Math.random().toString(36).slice(2)}.db`);
+    dbPath = path.join(
+      os.tmpdir(),
+      `speak-test-${Date.now()}-${Math.random().toString(36).slice(2)}.db`,
+    );
     db = createDatabase(dbPath);
     await migrateDatabase(db);
     const settingsService = new SettingsService(db);
     service = new DraftService(db, settingsService);
 
     // Create a voice profile
-    await db.insertInto('voice_profiles').values({
-      voice_description: 'Direct, technical',
-      example_posts: 'Ship fast, iterate.',
-      general_opinions: 'Simplicity wins.',
-    }).execute();
+    await db
+      .insertInto('voice_profiles')
+      .values({
+        voice_description: 'Direct, technical',
+        example_posts: 'Ship fast, iterate.',
+        general_opinions: 'Simplicity wins.',
+      })
+      .execute();
   });
 
   afterEach(async () => {
@@ -44,12 +50,15 @@ describe('DraftService', () => {
   });
 
   it('should generate a draft for a source with angle', async () => {
-    const sourceResult = await db.insertInto('sources').values({
-      analysis_status: 'complete',
-      analysis_summary: 'About AI agents.',
-      themes: JSON.stringify(['AI']),
-      opinion: 'I think agents are overhyped.',
-    }).executeTakeFirstOrThrow();
+    const sourceResult = await db
+      .insertInto('sources')
+      .values({
+        analysis_status: 'complete',
+        analysis_summary: 'About AI agents.',
+        themes: JSON.stringify(['AI']),
+        opinion: 'I think agents are overhyped.',
+      })
+      .executeTakeFirstOrThrow();
     const sourceId = Number(sourceResult.insertId);
 
     const provider = new MockDraftProvider();
@@ -66,33 +75,45 @@ describe('DraftService', () => {
   });
 
   it('should update draft content', async () => {
-    const sourceResult = await db.insertInto('sources').values({
-      analysis_status: 'complete',
-    }).executeTakeFirstOrThrow();
-    const draftResult = await db.insertInto('drafts').values({
-      source_id: Number(sourceResult.insertId),
-      content: 'Original draft',
-      status: 'draft',
-    }).executeTakeFirstOrThrow();
+    const sourceResult = await db
+      .insertInto('sources')
+      .values({
+        analysis_status: 'complete',
+      })
+      .executeTakeFirstOrThrow();
+    const draftResult = await db
+      .insertInto('drafts')
+      .values({
+        source_id: Number(sourceResult.insertId),
+        content: 'Original draft',
+        status: 'draft',
+      })
+      .executeTakeFirstOrThrow();
 
     const updated = await service.updateDraft(Number(draftResult.insertId), 'Edited draft');
     expect(updated.content).toBe('Edited draft');
   });
 
   it('should regenerate a draft with feedback', async () => {
-    const sourceResult = await db.insertInto('sources').values({
-      analysis_status: 'complete',
-      analysis_summary: 'About AI.',
-      themes: JSON.stringify(['AI']),
-    }).executeTakeFirstOrThrow();
+    const sourceResult = await db
+      .insertInto('sources')
+      .values({
+        analysis_status: 'complete',
+        analysis_summary: 'About AI.',
+        themes: JSON.stringify(['AI']),
+      })
+      .executeTakeFirstOrThrow();
     const sourceId = Number(sourceResult.insertId);
 
-    const draftResult = await db.insertInto('drafts').values({
-      source_id: sourceId,
-      angle: 'Original angle',
-      content: 'Too generic draft',
-      status: 'draft',
-    }).executeTakeFirstOrThrow();
+    const draftResult = await db
+      .insertInto('drafts')
+      .values({
+        source_id: sourceId,
+        angle: 'Original angle',
+        content: 'Too generic draft',
+        status: 'draft',
+      })
+      .executeTakeFirstOrThrow();
 
     const provider = new MockDraftProvider();
     const regenerated = await service.regenerateDraft(

@@ -1,5 +1,10 @@
 import { useState } from 'react';
-import { useSettings, useUpdateSettings, useValidateApiKey, useBookmarklet } from '../hooks/use-settings';
+import {
+  useSettings,
+  useUpdateSettings,
+  useValidateApiKey,
+  useBookmarklet,
+} from '../hooks/use-settings';
 
 function SettingsPage() {
   const { data: settings, isLoading } = useSettings();
@@ -9,7 +14,10 @@ function SettingsPage() {
   const [apiKey, setApiKey] = useState('');
   const [analysisModel, setAnalysisModel] = useState('');
   const [draftingModel, setDraftingModel] = useState('');
-  const [validationResult, setValidationResult] = useState<{ valid: boolean; message?: string } | null>(null);
+  const [validationResult, setValidationResult] = useState<{
+    valid: boolean;
+    message?: string;
+  } | null>(null);
 
   if (isLoading) return <div className="text-gray-500">Loading settings...</div>;
 
@@ -70,8 +78,12 @@ function SettingsPage() {
           </button>
         </div>
         {validationResult && (
-          <p className={`mt-2 text-sm ${validationResult.valid ? 'text-green-600' : 'text-red-600'}`}>
-            {validationResult.valid ? 'API key is valid!' : validationResult.message || 'API key is invalid'}
+          <p
+            className={`mt-2 text-sm ${validationResult.valid ? 'text-green-600' : 'text-red-600'}`}
+          >
+            {validationResult.valid
+              ? 'API key is valid!'
+              : validationResult.message || 'API key is invalid'}
           </p>
         )}
       </section>
@@ -130,7 +142,8 @@ function SettingsPage() {
           <p className="text-sm text-gray-400">Loading bookmarklet...</p>
         )}
         <p className="text-xs text-gray-500 mt-2">
-          Drag the button above to your browser's bookmarks bar. Click it on any page to capture it as a source.
+          Drag the button above to your browser's bookmarks bar. Click it on any page to capture it
+          as a source.
         </p>
       </section>
     </div>

@@ -23,10 +23,18 @@ function CapturePage() {
     try {
       const body: Record<string, string> = {};
       if (mode === 'url') {
-        if (!url.trim()) { setError('Please enter a URL'); setSubmitting(false); return; }
+        if (!url.trim()) {
+          setError('Please enter a URL');
+          setSubmitting(false);
+          return;
+        }
         body.url = url.trim();
       } else {
-        if (!text.trim()) { setError('Please enter some text'); setSubmitting(false); return; }
+        if (!text.trim()) {
+          setError('Please enter some text');
+          setSubmitting(false);
+          return;
+        }
         body.text = text.trim();
       }
       if (opinion.trim()) body.opinion = opinion.trim();

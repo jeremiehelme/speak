@@ -8,10 +8,7 @@ export function createProfileRouter(db: Kysely<Database>): Router {
   // GET /api/profile
   router.get('/', async (_req, res, next) => {
     try {
-      const profile = await db
-        .selectFrom('voice_profiles')
-        .selectAll()
-        .executeTakeFirst();
+      const profile = await db.selectFrom('voice_profiles').selectAll().executeTakeFirst();
 
       res.json({ data: profile ?? null });
     } catch (err) {
@@ -28,10 +25,7 @@ export function createProfileRouter(db: Kysely<Database>): Router {
         generalOpinions?: string;
       };
 
-      const existing = await db
-        .selectFrom('voice_profiles')
-        .select('id')
-        .executeTakeFirst();
+      const existing = await db.selectFrom('voice_profiles').select('id').executeTakeFirst();
 
       if (existing) {
         await db
@@ -55,10 +49,7 @@ export function createProfileRouter(db: Kysely<Database>): Router {
           .execute();
       }
 
-      const profile = await db
-        .selectFrom('voice_profiles')
-        .selectAll()
-        .executeTakeFirst();
+      const profile = await db.selectFrom('voice_profiles').selectAll().executeTakeFirst();
 
       res.json({ data: profile });
     } catch (err) {

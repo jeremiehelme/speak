@@ -15,7 +15,10 @@ export class DraftService {
     this.voiceService = new VoiceService(db);
   }
 
-  private buildTargetedQAPairs(source: { targeted_questions: string | null; targeted_answers: string | null }): { question: string; answer: string }[] {
+  private buildTargetedQAPairs(source: {
+    targeted_questions: string | null;
+    targeted_answers: string | null;
+  }): { question: string; answer: string }[] {
     if (!source.targeted_questions || !source.targeted_answers) return [];
     try {
       const questions = JSON.parse(source.targeted_questions) as string[];
@@ -88,7 +91,12 @@ export class DraftService {
       .executeTakeFirstOrThrow();
   }
 
-  async regenerateDraft(draftId: number, feedback: string | null, newAngle: string | null, llmProvider: LlmProvider): Promise<Draft> {
+  async regenerateDraft(
+    draftId: number,
+    feedback: string | null,
+    newAngle: string | null,
+    llmProvider: LlmProvider,
+  ): Promise<Draft> {
     const existing = await this.db
       .selectFrom('drafts')
       .selectAll()

@@ -1,11 +1,16 @@
 import { useState } from 'react';
-import { useSettings, useUpdateSettings, useValidateApiKey, useBookmarklet } from '../hooks/use-settings';
+import {
+  useSettings,
+  useUpdateSettings,
+  useValidateApiKey,
+  useBookmarklet,
+} from '../hooks/use-settings';
 import { useUpdateProfile } from '../hooks/use-profile';
 import { useNavigate } from 'react-router-dom';
 
 function OnboardingPage() {
   const navigate = useNavigate();
-  const { data: settings } = useSettings();
+  useSettings();
   const updateSettings = useUpdateSettings();
   const validateKey = useValidateApiKey();
   const updateProfile = useUpdateProfile();
@@ -13,7 +18,10 @@ function OnboardingPage() {
 
   const [step, setStep] = useState(1);
   const [apiKey, setApiKey] = useState('');
-  const [validationResult, setValidationResult] = useState<{ valid: boolean; message?: string } | null>(null);
+  const [validationResult, setValidationResult] = useState<{
+    valid: boolean;
+    message?: string;
+  } | null>(null);
   const [voiceDescription, setVoiceDescription] = useState('');
   const [examplePosts, setExamplePosts] = useState('');
   const [generalOpinions, setGeneralOpinions] = useState('');
@@ -88,7 +96,9 @@ function OnboardingPage() {
             Help Speak learn how you write. All fields are optional.
           </p>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Voice Description</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Voice Description
+            </label>
             <textarea
               value={voiceDescription}
               onChange={(e) => setVoiceDescription(e.target.value)}
@@ -98,7 +108,9 @@ function OnboardingPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Example Posts (2-3)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Example Posts (2-3)
+            </label>
             <textarea
               value={examplePosts}
               onChange={(e) => setExamplePosts(e.target.value)}
@@ -145,9 +157,7 @@ function OnboardingPage() {
           ) : (
             <p className="text-sm text-gray-400">Loading...</p>
           )}
-          <p className="text-xs text-gray-500">
-            You can always find this in Settings later.
-          </p>
+          <p className="text-xs text-gray-500">You can always find this in Settings later.</p>
           <button
             onClick={handleFinish}
             className="w-full px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"

@@ -10,9 +10,25 @@
     "start": "cd server && node dist/index.js",
     "test": "cd server && npx vitest run && cd ../client && npx vitest run",
     "test:server": "cd server && npx vitest run",
-    "test:client": "cd client && npx vitest run"
+    "test:client": "cd client && npx vitest run",
+    "lint": "cd client && npx eslint . && cd ../server && npx eslint .",
+    "format:check": "prettier --check \"client/src/**/*.{ts,tsx}\" \"server/src/**/*.ts\"",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "client/src/**/*.{ts,tsx}": [
+      "prettier --write",
+      "bash -c 'cd client && npx eslint --fix \"$@\"' --"
+    ],
+    "server/src/**/*.ts": [
+      "prettier --write",
+      "bash -c 'cd server && npx eslint --fix \"$@\"' --"
+    ]
   },
   "devDependencies": {
-    "concurrently": "^9.2.1"
+    "concurrently": "^9.2.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
+    "prettier": "^3.8.1"
   }
 }

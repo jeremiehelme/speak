@@ -39,7 +39,10 @@ describe('AnalysisService', () => {
   let settingsService: SettingsService;
 
   beforeEach(async () => {
-    dbPath = path.join(os.tmpdir(), `speak-test-${Date.now()}-${Math.random().toString(36).slice(2)}.db`);
+    dbPath = path.join(
+      os.tmpdir(),
+      `speak-test-${Date.now()}-${Math.random().toString(36).slice(2)}.db`,
+    );
     db = createDatabase(dbPath);
     await migrateDatabase(db);
     settingsService = new SettingsService(db);
@@ -52,48 +55,73 @@ describe('AnalysisService', () => {
   });
 
   it('should analyze a source and update fields', async () => {
-    const result = await db.insertInto('sources').values({
-      extracted_content: 'This article is about AI agents in production.',
-      analysis_status: 'pending',
-    }).executeTakeFirstOrThrow();
+    const result = await db
+      .insertInto('sources')
+      .values({
+        extracted_content: 'This article is about AI agents in production.',
+        analysis_status: 'pending',
+      })
+      .executeTakeFirstOrThrow();
     const sourceId = Number(result.insertId);
 
     const provider = new MockLlmProvider();
     await service.analyzeSource(sourceId, provider);
 
-    const source = await db.selectFrom('sources').selectAll().where('id', '=', sourceId).executeTakeFirstOrThrow();
+    const source = await db
+      .selectFrom('sources')
+      .selectAll()
+      .where('id', '=', sourceId)
+      .executeTakeFirstOrThrow();
     expect(source.analysis_status).toBe('complete');
     expect(source.analysis_summary).toBe('Test summary about AI agents.');
     expect(source.category).toBe('AI');
     expect(JSON.parse(source.themes!)).toEqual(['AI', 'agents', 'automation']);
-    expect(JSON.parse(source.takeaways!)).toEqual(['Agents are useful', 'Keep it simple', 'Ship fast']);
+    expect(JSON.parse(source.takeaways!)).toEqual([
+      'Agents are useful',
+      'Keep it simple',
+      'Ship fast',
+    ]);
     expect(source.relevance).toBe('Important for tech professionals building AI products.');
   });
 
   it('should mark source as failed on LLM error', async () => {
-    const result = await db.insertInto('sources').values({
-      extracted_content: 'Some content',
-      analysis_status: 'pending',
-    }).executeTakeFirstOrThrow();
+    const result = await db
+      .insertInto('sources')
+      .values({
+        extracted_content: 'Some content',
+        analysis_status: 'pending',
+      })
+      .executeTakeFirstOrThrow();
     const sourceId = Number(result.insertId);
 
     const provider = new FailingLlmProvider();
     await service.analyzeSource(sourceId, provider);
 
-    const source = await db.selectFrom('sources').selectAll().where('id', '=', sourceId).executeTakeFirstOrThrow();
+    const source = await db
+      .selectFrom('sources')
+      .selectAll()
+      .where('id', '=', sourceId)
+      .executeTakeFirstOrThrow();
     expect(source.analysis_status).toBe('failed');
   });
 
   it('should mark source as failed if no content', async () => {
-    const result = await db.insertInto('sources').values({
-      analysis_status: 'pending',
-    }).executeTakeFirstOrThrow();
+    const result = await db
+      .insertInto('sources')
+      .values({
+        analysis_status: 'pending',
+      })
+      .executeTakeFirstOrThrow();
     const sourceId = Number(result.insertId);
 
     const provider = new MockLlmProvider();
     await service.analyzeSource(sourceId, provider);
 
-    const source = await db.selectFrom('sources').selectAll().where('id', '=', sourceId).executeTakeFirstOrThrow();
+    const source = await db
+      .selectFrom('sources')
+      .selectAll()
+      .where('id', '=', sourceId)
+      .executeTakeFirstOrThrow();
     expect(source.analysis_status).toBe('failed');
   });
 });

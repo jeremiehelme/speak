@@ -69,10 +69,11 @@ export function createSettingsRouter(db: Kysely<Database>): Router {
       if (response.ok) {
         res.json({ data: { valid: true } });
       } else {
-        const body = await response.json().catch(() => ({})) as Record<string, unknown>;
-        const errorMsg = typeof body?.error === 'object' && body.error !== null
-          ? (body.error as Record<string, unknown>)?.message ?? 'Invalid API key'
-          : 'Invalid API key';
+        const body = (await response.json().catch(() => ({}))) as Record<string, unknown>;
+        const errorMsg =
+          typeof body?.error === 'object' && body.error !== null
+            ? ((body.error as Record<string, unknown>)?.message ?? 'Invalid API key')
+            : 'Invalid API key';
         res.json({ data: { valid: false, message: errorMsg } });
       }
     } catch (err) {

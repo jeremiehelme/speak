@@ -31,11 +31,15 @@ function SourceCard({ source }: SourceCardProps) {
       </div>
       <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
         <span>{date}</span>
-        <span className={`px-1.5 py-0.5 rounded text-xs ${
-          source.analysis_status === 'complete' ? 'bg-green-100 text-green-700' :
-          source.analysis_status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-          'bg-red-100 text-red-700'
-        }`}>
+        <span
+          className={`px-1.5 py-0.5 rounded text-xs ${
+            source.analysis_status === 'complete'
+              ? 'bg-green-100 text-green-700'
+              : source.analysis_status === 'pending'
+                ? 'bg-yellow-100 text-yellow-700'
+                : 'bg-red-100 text-red-700'
+          }`}
+        >
           {source.analysis_status}
         </span>
       </div>

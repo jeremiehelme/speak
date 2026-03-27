@@ -127,11 +127,7 @@ export function createSourcesRouter(db: Kysely<Database>): Router {
       const updates: Record<string, unknown> = { updated_at: Math.floor(Date.now() / 1000) };
       if (title !== undefined) updates['title'] = title;
 
-      await db
-        .updateTable('sources')
-        .set(updates)
-        .where('id', '=', id)
-        .execute();
+      await db.updateTable('sources').set(updates).where('id', '=', id).execute();
 
       const updated = await db
         .selectFrom('sources')
@@ -152,7 +148,9 @@ export function createSourcesRouter(db: Kysely<Database>): Router {
       const { answers } = req.body as { answers: string[] };
 
       if (!answers || !Array.isArray(answers) || !answers.every((a) => typeof a === 'string')) {
-        res.status(400).json({ error: { code: 'INVALID_INPUT', message: 'answers must be an array of strings' } });
+        res.status(400).json({
+          error: { code: 'INVALID_INPUT', message: 'answers must be an array of strings' },
+        });
         return;
       }
 
@@ -195,10 +193,7 @@ export function createSourcesRouter(db: Kysely<Database>): Router {
 
       await sql`PRAGMA foreign_keys = ON`.execute(db);
 
-      const result = await db
-        .deleteFrom('sources')
-        .where('id', '=', id)
-        .executeTakeFirst();
+      const result = await db.deleteFrom('sources').where('id', '=', id).executeTakeFirst();
 
       if (result.numDeletedRows === 0n) {
         res.status(404).json({

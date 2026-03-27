@@ -12,11 +12,11 @@ export interface VoiceContext {
 export class VoiceService {
   constructor(private db: Kysely<Database>) {}
 
-  async assembleVoiceContext(articleOpinion?: string | null, targetedQAPairs?: { question: string; answer: string }[]): Promise<VoiceContext> {
-    const profile = await this.db
-      .selectFrom('voice_profiles')
-      .selectAll()
-      .executeTakeFirst();
+  async assembleVoiceContext(
+    articleOpinion?: string | null,
+    targetedQAPairs?: { question: string; answer: string }[],
+  ): Promise<VoiceContext> {
+    const profile = await this.db.selectFrom('voice_profiles').selectAll().executeTakeFirst();
 
     let targetedQA = '';
     if (targetedQAPairs && targetedQAPairs.length > 0) {

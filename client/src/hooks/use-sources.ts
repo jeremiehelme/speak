@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiGet, apiPost, apiPut, apiDelete } from '../lib/api-client';
-import { useRef, useEffect } from 'react';
 
 export interface Source {
   id: number;
@@ -51,8 +50,7 @@ export function useSource(id: string | undefined) {
 export function useRetryAnalysis() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (sourceId: number) =>
-      apiPost<Source>(`/sources/${sourceId}/retry-analysis`, {}),
+    mutationFn: (sourceId: number) => apiPost<Source>(`/sources/${sourceId}/retry-analysis`, {}),
     onSuccess: (_data, sourceId) => {
       queryClient.invalidateQueries({ queryKey: ['source', String(sourceId)] });
       queryClient.invalidateQueries({ queryKey: ['sources'] });

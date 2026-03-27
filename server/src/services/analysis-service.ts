@@ -35,7 +35,8 @@ export class AnalysisService {
     }
 
     try {
-      const analysisModel = (await this.settingsService.get('analysis_model')) || 'claude-haiku-4-5-20251001';
+      const analysisModel =
+        (await this.settingsService.get('analysis_model')) || 'claude-haiku-4-5-20251001';
       const prompt = loadPrompt('analyze-source.md', {
         content: content.slice(0, 10000), // Limit content length
       });
@@ -46,11 +47,22 @@ export class AnalysisService {
         maxTokens: 1024,
       });
 
-      const jsonText = response.content.replace(/^```(?:json)?\s*\n?/m, '').replace(/\n?```\s*$/m, '').trim();
+      const jsonText = response.content
+        .replace(/^```(?:json)?\s*\n?/m, '')
+        .replace(/\n?```\s*$/m, '')
+        .trim();
       const analysis = JSON.parse(jsonText);
 
-      if (!analysis || typeof analysis !== 'object' || !analysis.summary || !Array.isArray(analysis.themes) || !Array.isArray(analysis.takeaways)) {
-        throw new Error('LLM returned invalid analysis: expected object with summary, themes, and takeaways');
+      if (
+        !analysis ||
+        typeof analysis !== 'object' ||
+        !analysis.summary ||
+        !Array.isArray(analysis.themes) ||
+        !Array.isArray(analysis.takeaways)
+      ) {
+        throw new Error(
+          'LLM returned invalid analysis: expected object with summary, themes, and takeaways',
+        );
       }
 
       await this.db

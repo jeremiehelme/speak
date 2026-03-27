@@ -16,15 +16,21 @@ describe('Database', () => {
   });
 
   it('should create database and run migrations', async () => {
-    dbPath = path.join(os.tmpdir(), `speak-test-${Date.now()}-${Math.random().toString(36).slice(2)}.db`);
+    dbPath = path.join(
+      os.tmpdir(),
+      `speak-test-${Date.now()}-${Math.random().toString(36).slice(2)}.db`,
+    );
     db = createDatabase(dbPath);
     await migrateDatabase(db);
 
     // Verify tables exist by inserting and querying
-    await db.insertInto('sources').values({
-      url: 'https://example.com',
-      analysis_status: 'pending',
-    }).execute();
+    await db
+      .insertInto('sources')
+      .values({
+        url: 'https://example.com',
+        analysis_status: 'pending',
+      })
+      .execute();
 
     const sources = await db.selectFrom('sources').selectAll().execute();
     expect(sources).toHaveLength(1);
@@ -33,7 +39,10 @@ describe('Database', () => {
   });
 
   it('should create all four tables', async () => {
-    dbPath = path.join(os.tmpdir(), `speak-test-${Date.now()}-${Math.random().toString(36).slice(2)}.db`);
+    dbPath = path.join(
+      os.tmpdir(),
+      `speak-test-${Date.now()}-${Math.random().toString(36).slice(2)}.db`,
+    );
     db = createDatabase(dbPath);
     await migrateDatabase(db);
 
@@ -56,14 +65,20 @@ describe('Database', () => {
   });
 
   it('should cascade delete drafts when source is deleted', async () => {
-    dbPath = path.join(os.tmpdir(), `speak-test-${Date.now()}-${Math.random().toString(36).slice(2)}.db`);
+    dbPath = path.join(
+      os.tmpdir(),
+      `speak-test-${Date.now()}-${Math.random().toString(36).slice(2)}.db`,
+    );
     db = createDatabase(dbPath);
     await migrateDatabase(db);
 
     // Enable foreign keys for SQLite
     await sql`PRAGMA foreign_keys = ON`.execute(db);
 
-    const result = await db.insertInto('sources').values({ analysis_status: 'pending' }).executeTakeFirstOrThrow();
+    const result = await db
+      .insertInto('sources')
+      .values({ analysis_status: 'pending' })
+      .executeTakeFirstOrThrow();
     const sourceId = Number(result.insertId);
 
     await db.insertInto('drafts').values({ source_id: sourceId, status: 'draft' }).execute();

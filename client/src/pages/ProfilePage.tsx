@@ -9,6 +9,7 @@ function ProfilePage() {
   const [generalOpinions, setGeneralOpinions] = useState('');
   const [saved, setSaved] = useState(false);
 
+  /* eslint-disable react-hooks/set-state-in-effect -- syncing form state from server data on load */
   useEffect(() => {
     if (profile) {
       setVoiceDescription(profile.voice_description ?? '');
@@ -16,6 +17,7 @@ function ProfilePage() {
       setGeneralOpinions(profile.general_opinions ?? '');
     }
   }, [profile]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   if (isLoading) return <div className="text-gray-500">Loading profile...</div>;
 
@@ -71,7 +73,8 @@ function ProfilePage() {
             General Opinions & Stances
           </label>
           <p className="text-xs text-gray-500 mb-2">
-            What are your core beliefs relevant to your content? E.g., "AI hype is overblown but the technology is real."
+            What are your core beliefs relevant to your content? E.g., "AI hype is overblown but the
+            technology is real."
           </p>
           <textarea
             value={generalOpinions}
