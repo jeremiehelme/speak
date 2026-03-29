@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import type { Kysely } from 'kysely';
-import { sql } from 'kysely';
 import type { Database } from '../db/types.js';
 import { AnalysisService } from '../services/analysis-service.js';
 import { SettingsService } from '../services/settings-service.js';
@@ -190,8 +189,6 @@ export function createSourcesRouter(db: Kysely<Database>): Router {
   router.delete('/:id', async (req, res, next) => {
     try {
       const id = parseInt(req.params['id']!, 10);
-
-      await sql`PRAGMA foreign_keys = ON`.execute(db);
 
       const result = await db.deleteFrom('sources').where('id', '=', id).executeTakeFirst();
 
