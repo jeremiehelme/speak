@@ -134,7 +134,10 @@ function SourceDetailPage() {
     setTimeout(() => setSaved(false), 2000);
   };
 
-  const handleCopy = () => {
+  const handleCopy = async () => {
+    if (draft) {
+      await updateDraft.mutateAsync({ draftId: draft.id, content: draftContent });
+    }
     navigator.clipboard.writeText(draftContent);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -444,6 +447,7 @@ function SourceDetailPage() {
                 onClick={async () => {
                   if (!draft) return;
                   try {
+                    await updateDraft.mutateAsync({ draftId: draft.id, content: draftContent });
                     const result = await publishDraft.mutateAsync(draft.id);
                     setDraft(result);
                   } catch {
@@ -471,6 +475,7 @@ function SourceDetailPage() {
                 onClick={async () => {
                   if (!draft) return;
                   try {
+                    await updateDraft.mutateAsync({ draftId: draft.id, content: draftContent });
                     const result = await scheduleDraft.mutateAsync(draft.id);
                     setDraft(result);
                   } catch {
