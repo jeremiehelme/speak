@@ -33,7 +33,7 @@ export class CaptureService {
       extractedContent = rawText;
     }
 
-    const result = await this.db
+    return await this.db
       .insertInto('sources')
       .values({
         url: input.url ?? null,
@@ -43,14 +43,7 @@ export class CaptureService {
         opinion: input.opinion ?? null,
         analysis_status: analysisStatus,
       })
-      .executeTakeFirstOrThrow();
-
-    const sourceId = Number(result.insertId);
-
-    return this.db
-      .selectFrom('sources')
-      .selectAll()
-      .where('id', '=', sourceId)
+      .returningAll()
       .executeTakeFirstOrThrow();
   }
 }

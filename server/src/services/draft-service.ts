@@ -74,7 +74,7 @@ export class DraftService {
       maxTokens: 1024,
     });
 
-    const result = await this.db
+    return await this.db
       .insertInto('drafts')
       .values({
         source_id: sourceId,
@@ -82,12 +82,7 @@ export class DraftService {
         content: response.content.trim(),
         status: 'draft',
       })
-      .executeTakeFirstOrThrow();
-
-    return this.db
-      .selectFrom('drafts')
-      .selectAll()
-      .where('id', '=', Number(result.insertId))
+      .returningAll()
       .executeTakeFirstOrThrow();
   }
 
