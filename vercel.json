@@ -2,11 +2,6 @@
   "buildCommand": "cd client && npm install && npm run build",
   "outputDirectory": "client/dist",
   "installCommand": "npm install && cd server && npm install --legacy-peer-deps && cd ../client && npm install",
-  "functions": {
-    "api/**/*.ts": {
-      "runtime": "@vercel/node@3"
-    }
-  },
   "rewrites": [
     { "source": "/api/cron/publish", "destination": "/api/cron/publish" },
     { "source": "/api/(.*)", "destination": "/api/index" },
