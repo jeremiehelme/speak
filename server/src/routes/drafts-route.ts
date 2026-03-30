@@ -4,15 +4,24 @@ import type { Database } from '../db/types.js';
 import { DraftService } from '../services/draft-service.js';
 import { SettingsService } from '../services/settings-service.js';
 import { XPublishingService } from '../services/x-publishing-service.js';
+import { ThreadsPublishingService } from '../services/threads-publishing-service.js';
 import { QueueService } from '../services/queue-service.js';
 import { ScheduleService } from '../services/schedule-service.js';
 import { createLlmProvider } from '../llm/index.js';
+
+function getMaxCharLimit(hasX: boolean, hasThreads: boolean): number {
+  const limits: number[] = [];
+  if (hasX) limits.push(280);
+  if (hasThreads) limits.push(500);
+  return limits.length > 0 ? Math.max(...limits) : 280;
+}
 
 export function createDraftsRouter(db: Kysely<Database>): Router {
   const router = Router();
   const settingsService = new SettingsService(db);
   const draftService = new DraftService(db, settingsService);
   const xPublishing = new XPublishingService(settingsService);
+  const threadsPublishing = new ThreadsPublishingService(settingsService);
   const scheduleService = new ScheduleService(settingsService);
   const queueService = new QueueService(db, scheduleService);
 
@@ -38,7 +47,10 @@ export function createDraftsRouter(db: Kysely<Database>): Router {
       }
 
       const provider = createLlmProvider(apiKey);
-      const draft = await draftService.generateDraft(sourceId, angle, provider);
+      const hasX = await xPublishing.hasCredentials();
+      const hasThreads = await threadsPublishing.hasCredentials();
+      const maxLength = getMaxCharLimit(hasX, hasThreads);
+      const draft = await draftService.generateDraft(sourceId, angle, provider, maxLength);
 
       res.json({ data: draft });
     } catch (err) {
@@ -74,11 +86,15 @@ export function createDraftsRouter(db: Kysely<Database>): Router {
       }
 
       const provider = createLlmProvider(apiKey);
+      const hasX = await xPublishing.hasCredentials();
+      const hasThreads = await threadsPublishing.hasCredentials();
+      const maxLength = getMaxCharLimit(hasX, hasThreads);
       const draft = await draftService.regenerateDraft(
         draftId,
         feedback ?? null,
         angle ?? null,
         provider,
+        maxLength,
       );
 
       res.json({ data: draft });
@@ -165,6 +181,85 @@ export function createDraftsRouter(db: Kysely<Database>): Router {
     }
   });
 
+  // POST /api/drafts/:id/publish-threads — publish a draft to Threads
+  router.post('/drafts/:id/publish-threads', async (req, res, next) => {
+    try {
+      const draftId = parseInt(req.params['id']!, 10);
+
+      const draft = await db
+        .selectFrom('drafts')
+        .selectAll()
+        .where('id', '=', draftId)
+        .executeTakeFirst();
+
+      if (!draft) {
+        res.status(404).json({
+          error: { code: 'DRAFT_NOT_FOUND', message: 'Draft not found' },
+        });
+        return;
+      }
+
+      if (!draft.content) {
+        res.status(400).json({
+          error: { code: 'EMPTY_DRAFT', message: 'Draft has no content to publish' },
+        });
+        return;
+      }
+
+      if (draft.content.length > 500) {
+        res.status(400).json({
+          error: {
+            code: 'EXCEEDS_CHAR_LIMIT',
+            message: `Draft exceeds Threads' 500 character limit (${draft.content.length} characters)`,
+          },
+        });
+        return;
+      }
+
+      if (draft.published_status === 'published') {
+        res.status(400).json({
+          error: { code: 'ALREADY_PUBLISHED', message: 'This draft has already been published' },
+        });
+        return;
+      }
+
+      const hasThreadsCreds = await threadsPublishing.hasCredentials();
+      if (!hasThreadsCreds) {
+        res.status(400).json({
+          error: {
+            code: 'NO_THREADS_CREDENTIALS',
+            message: 'Threads API credentials not configured — go to Settings',
+          },
+        });
+        return;
+      }
+
+      const result = await threadsPublishing.publishPost(draft.content);
+
+      await db
+        .updateTable('drafts')
+        .set({
+          published_status: 'published',
+          published_url: result.url,
+          published_at: Math.floor(Date.now() / 1000),
+          platform: 'threads',
+          updated_at: Math.floor(Date.now() / 1000),
+        })
+        .where('id', '=', draftId)
+        .execute();
+
+      const updated = await db
+        .selectFrom('drafts')
+        .selectAll()
+        .where('id', '=', draftId)
+        .executeTakeFirstOrThrow();
+
+      res.json({ data: updated });
+    } catch (err) {
+      next(err);
+    }
+  });
+
   // POST /api/drafts/:id/schedule — queue a draft for scheduled publishing
   router.post('/drafts/:id/schedule', async (req, res, next) => {
     try {
@@ -232,6 +327,36 @@ export function createDraftsRouter(db: Kysely<Database>): Router {
         .executeTakeFirstOrThrow();
 
       res.json({ data: draft });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // POST /api/drafts/:id/adapt — adapt draft to another platform
+  router.post('/drafts/:id/adapt', async (req, res, next) => {
+    try {
+      const draftId = parseInt(req.params['id']!, 10);
+      const { targetPlatform } = req.body as { targetPlatform?: string };
+
+      if (!targetPlatform) {
+        res.status(400).json({
+          error: { code: 'MISSING_PLATFORM', message: 'targetPlatform is required' },
+        });
+        return;
+      }
+
+      const apiKey = await settingsService.getAnthropicApiKey();
+      if (!apiKey) {
+        res.status(400).json({
+          error: { code: 'NO_API_KEY', message: 'API key not configured' },
+        });
+        return;
+      }
+
+      const provider = createLlmProvider(apiKey);
+      const adapted = await draftService.adaptDraft(draftId, targetPlatform, provider);
+
+      res.json({ data: adapted });
     } catch (err) {
       next(err);
     }

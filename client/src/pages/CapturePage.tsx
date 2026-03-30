@@ -11,7 +11,6 @@ function CapturePage() {
   const navigate = useNavigate();
   const [url, setUrl] = useState('');
   const [text, setText] = useState('');
-  const [opinion, setOpinion] = useState('');
   const [mode, setMode] = useState<'url' | 'text'>('url');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -37,8 +36,6 @@ function CapturePage() {
         }
         body.text = text.trim();
       }
-      if (opinion.trim()) body.opinion = opinion.trim();
-
       const source = await apiPost<Source>('/capture', body);
 
       if (source.analysis_status === 'extraction_failed') {
@@ -99,19 +96,6 @@ function CapturePage() {
             />
           </div>
         )}
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            What's your take? (optional)
-          </label>
-          <textarea
-            value={opinion}
-            onChange={(e) => setOpinion(e.target.value)}
-            rows={2}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-            placeholder="Your opinion on this article..."
-          />
-        </div>
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 

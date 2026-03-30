@@ -10,6 +10,8 @@ import {
   useSaveSchedule,
   useTimeRestrictions,
   useSaveTimeRestrictions,
+  useSaveThreadsCredentials,
+  useValidateThreadsConnection,
   type ScheduleSlot,
 } from '../hooks/use-settings';
 
@@ -20,6 +22,8 @@ function SettingsPage() {
   const validateKey = useValidateApiKey();
   const saveXCreds = useSaveXCredentials();
   const validateX = useValidateXConnection();
+  const saveThreadsCreds = useSaveThreadsCredentials();
+  const validateThreads = useValidateThreadsConnection();
   const { data: scheduleData } = useSchedule();
   const saveSchedule = useSaveSchedule();
   const [scheduleSlots, setScheduleSlots] = useState<ScheduleSlot[] | null>(null);
@@ -42,6 +46,12 @@ function SettingsPage() {
   const [xAccessToken, setXAccessToken] = useState('');
   const [xAccessTokenSecret, setXAccessTokenSecret] = useState('');
   const [xValidationResult, setXValidationResult] = useState<{
+    valid: boolean;
+    message?: string;
+  } | null>(null);
+  const [threadsAccessToken, setThreadsAccessToken] = useState('');
+  const [threadsUserId, setThreadsUserId] = useState('');
+  const [threadsValidationResult, setThreadsValidationResult] = useState<{
     valid: boolean;
     message?: string;
   } | null>(null);
@@ -220,6 +230,80 @@ function SettingsPage() {
             {xValidationResult.valid
               ? 'X connection is valid!'
               : xValidationResult.message || 'X credentials are invalid'}
+          </p>
+        )}
+      </section>
+
+      {/* Threads API Credentials */}
+      <section className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Threads API Credentials</h2>
+        <p className="text-sm text-gray-600 mb-4">
+          {settings?.hasThreadsCredentials
+            ? 'Threads credentials are configured. Enter new credentials to replace them.'
+            : 'Connect your Threads account to publish posts directly from Speak.'}
+        </p>
+        <div className="space-y-3">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Access Token</label>
+            <input
+              type="password"
+              value={threadsAccessToken}
+              onChange={(e) => setThreadsAccessToken(e.target.value)}
+              placeholder="Access Token"
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">User ID</label>
+            <input
+              type="text"
+              value={threadsUserId}
+              onChange={(e) => setThreadsUserId(e.target.value)}
+              placeholder="User ID"
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+            />
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={async () => {
+                if (!threadsAccessToken.trim() || !threadsUserId.trim()) return;
+                await saveThreadsCreds.mutateAsync({
+                  accessToken: threadsAccessToken.trim(),
+                  userId: threadsUserId.trim(),
+                });
+                setThreadsAccessToken('');
+                setThreadsUserId('');
+              }}
+              disabled={
+                !threadsAccessToken.trim() || !threadsUserId.trim() || saveThreadsCreds.isPending
+              }
+              className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 disabled:opacity-50"
+            >
+              {saveThreadsCreds.isPending ? 'Saving...' : 'Save Credentials'}
+            </button>
+            <button
+              onClick={async () => {
+                const creds =
+                  threadsAccessToken.trim() && threadsUserId.trim()
+                    ? { accessToken: threadsAccessToken.trim(), userId: threadsUserId.trim() }
+                    : undefined;
+                const result = await validateThreads.mutateAsync(creds);
+                setThreadsValidationResult(result);
+              }}
+              disabled={validateThreads.isPending}
+              className="px-4 py-2 bg-gray-600 text-white rounded-md text-sm hover:bg-gray-700 disabled:opacity-50"
+            >
+              {validateThreads.isPending ? 'Validating...' : 'Validate Connection'}
+            </button>
+          </div>
+        </div>
+        {threadsValidationResult && (
+          <p
+            className={`mt-2 text-sm ${threadsValidationResult.valid ? 'text-green-600' : 'text-red-600'}`}
+          >
+            {threadsValidationResult.valid
+              ? 'Threads connection is valid!'
+              : threadsValidationResult.message || 'Threads credentials are invalid'}
           </p>
         )}
       </section>

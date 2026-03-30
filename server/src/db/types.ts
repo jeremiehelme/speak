@@ -38,6 +38,7 @@ export interface DraftsTable {
   published_url: string | null;
   published_at: number | null;
   scheduled_at: number | null;
+  platform: string | null;
   created_at: Generated<number>;
   updated_at: Generated<number>;
 }

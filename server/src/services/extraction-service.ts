@@ -1,6 +1,3 @@
-import { Readability } from '@mozilla/readability';
-import { JSDOM } from 'jsdom';
-
 export interface ExtractionResult {
   title: string;
   content: string;
@@ -19,6 +16,8 @@ export async function extractArticle(url: string): Promise<ExtractionResult> {
   }
 
   const html = await response.text();
+  const { JSDOM } = await import('jsdom');
+  const { Readability } = await import('@mozilla/readability');
   const dom = new JSDOM(html, { url });
   const reader = new Readability(dom.window.document);
   const article = reader.parse();

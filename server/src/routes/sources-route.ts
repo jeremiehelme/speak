@@ -110,7 +110,7 @@ export function createSourcesRouter(db: Kysely<Database>): Router {
   router.put('/:id', async (req, res, next) => {
     try {
       const id = parseInt(req.params['id']!, 10);
-      const { title } = req.body as { title?: string };
+      const { title, opinion } = req.body as { title?: string; opinion?: string };
 
       const source = await db
         .selectFrom('sources')
@@ -125,6 +125,7 @@ export function createSourcesRouter(db: Kysely<Database>): Router {
 
       const updates: Record<string, unknown> = { updated_at: Math.floor(Date.now() / 1000) };
       if (title !== undefined) updates['title'] = title;
+      if (opinion !== undefined) updates['opinion'] = opinion;
 
       await db.updateTable('sources').set(updates).where('id', '=', id).execute();
 

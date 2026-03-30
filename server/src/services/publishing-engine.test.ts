@@ -7,6 +7,7 @@ import type { Database } from '../db/types.js';
 import type { Kysely } from 'kysely';
 import { SettingsService } from './settings-service.js';
 import { XPublishingService } from './x-publishing-service.js';
+import { ThreadsPublishingService } from './threads-publishing-service.js';
 import { PublishingEngine } from './publishing-engine.js';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -17,6 +18,7 @@ describe('PublishingEngine', () => {
   let dbPath: string;
   let settings: SettingsService;
   let xPublishing: XPublishingService;
+  let threadsPublishing: ThreadsPublishingService;
   let engine: PublishingEngine;
 
   beforeEach(async () => {
@@ -25,7 +27,8 @@ describe('PublishingEngine', () => {
     await migrateDatabase(db);
     settings = new SettingsService(db);
     xPublishing = new XPublishingService(settings);
-    engine = new PublishingEngine(db, xPublishing);
+    threadsPublishing = new ThreadsPublishingService(settings);
+    engine = new PublishingEngine(db, xPublishing, threadsPublishing);
   });
 
   afterEach(async () => {

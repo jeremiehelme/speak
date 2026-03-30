@@ -4,6 +4,8 @@ import { apiGet, apiPut, apiPost } from '../lib/api-client';
 interface Settings {
   hasApiKey: boolean;
   hasXCredentials: boolean;
+  hasThreadsCredentials: boolean;
+  maxCharLimit: number;
   analysis_model?: string;
   drafting_model?: string;
   app_url?: string;
@@ -67,6 +69,29 @@ export function useValidateXConnection() {
   return useMutation({
     mutationFn: (creds?: XCredentials) =>
       apiPost<ValidationResult>('/settings/validate-x', creds ?? {}),
+  });
+}
+
+interface ThreadsCredentials {
+  accessToken: string;
+  userId: string;
+}
+
+export function useSaveThreadsCredentials() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (creds: ThreadsCredentials) =>
+      apiPut<{ hasThreadsCredentials: boolean }>('/settings/threads-credentials', creds),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['settings'] });
+    },
+  });
+}
+
+export function useValidateThreadsConnection() {
+  return useMutation({
+    mutationFn: (creds?: ThreadsCredentials) =>
+      apiPost<ValidationResult>('/settings/validate-threads', creds ?? {}),
   });
 }
 

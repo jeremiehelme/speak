@@ -55,6 +55,7 @@ class TestMigrationProvider implements MigrationProvider {
             .addColumn('published_url', 'text')
             .addColumn('published_at', 'integer')
             .addColumn('scheduled_at', 'integer')
+            .addColumn('platform', 'text')
             .addColumn('created_at', 'integer', (col) =>
               col.notNull().defaultTo(sql`(unixepoch())`),
             )

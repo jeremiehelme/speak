@@ -1,4 +1,4 @@
-Generate an X (Twitter) post based on the following source and angle.
+Generate a social media post based on the following source and angle.
 
 ## Source Analysis
 Summary: {{summary}}
@@ -21,7 +21,7 @@ Author's opinion on this specific article:
 {{targetedQA}}
 
 ## Instructions
-Write a single X post (max 280 characters) that:
+Write a single social media post (max {{maxLength}} characters) that:
 1. Matches the author's voice exactly — use their tone, vocabulary, and style
 2. Incorporates their opinions and stances
 3. Takes the selected angle on the source material

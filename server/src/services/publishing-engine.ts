@@ -1,6 +1,7 @@
 import type { Kysely } from 'kysely';
 import type { Database } from '../db/types.js';
 import { XPublishingService } from './x-publishing-service.js';
+import { ThreadsPublishingService } from './threads-publishing-service.js';
 import { SettingsService } from './settings-service.js';
 
 export class PublishingEngine {
@@ -9,6 +10,7 @@ export class PublishingEngine {
   constructor(
     private db: Kysely<Database>,
     private xPublishing: XPublishingService,
+    private threadsPublishing: ThreadsPublishingService,
   ) {}
 
   /** Start the publishing engine for local dev — checks every minute */
@@ -59,7 +61,10 @@ export class PublishingEngine {
       }
 
       try {
-        const result = await this.xPublishing.publishTweet(draft.content);
+        const result =
+          draft.platform === 'threads'
+            ? await this.threadsPublishing.publishPost(draft.content)
+            : await this.xPublishing.publishTweet(draft.content);
 
         await this.db
           .updateTable('drafts')
@@ -113,5 +118,6 @@ export class PublishingEngine {
 export function createPublishingEngine(db: Kysely<Database>): PublishingEngine {
   const settings = new SettingsService(db);
   const xPublishing = new XPublishingService(settings);
-  return new PublishingEngine(db, xPublishing);
+  const threadsPublishing = new ThreadsPublishingService(settings);
+  return new PublishingEngine(db, xPublishing, threadsPublishing);
 }

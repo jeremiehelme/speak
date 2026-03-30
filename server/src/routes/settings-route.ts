@@ -4,6 +4,7 @@ import type { Database } from '../db/types.js';
 import { SettingsService } from '../services/settings-service.js';
 import { BookmarkletService } from '../services/bookmarklet-service.js';
 import { XPublishingService } from '../services/x-publishing-service.js';
+import { ThreadsPublishingService } from '../services/threads-publishing-service.js';
 import { ScheduleService } from '../services/schedule-service.js';
 
 export function createSettingsRouter(db: Kysely<Database>): Router {
@@ -11,6 +12,7 @@ export function createSettingsRouter(db: Kysely<Database>): Router {
   const settings = new SettingsService(db);
   const bookmarklet = new BookmarkletService(settings);
   const xPublishing = new XPublishingService(settings);
+  const threadsPublishing = new ThreadsPublishingService(settings);
   const scheduleService = new ScheduleService(settings);
 
   // GET /api/settings — public settings (no secrets)
@@ -19,7 +21,14 @@ export function createSettingsRouter(db: Kysely<Database>): Router {
       const data = await settings.getPublicSettings();
       const hasApiKey = !!(await settings.getAnthropicApiKey());
       const hasXCredentials = await xPublishing.hasCredentials();
-      res.json({ data: { ...data, hasApiKey, hasXCredentials } });
+      const hasThreadsCredentials = await threadsPublishing.hasCredentials();
+      const limits: number[] = [];
+      if (hasXCredentials) limits.push(280);
+      if (hasThreadsCredentials) limits.push(500);
+      const maxCharLimit = limits.length > 0 ? Math.max(...limits) : 280;
+      res.json({
+        data: { ...data, hasApiKey, hasXCredentials, hasThreadsCredentials, maxCharLimit },
+      });
     } catch (err) {
       next(err);
     }
@@ -139,6 +148,49 @@ export function createSettingsRouter(db: Kysely<Database>): Router {
           : undefined;
 
       const result = await xPublishing.validateCredentials(creds);
+      res.json({ data: result });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // PUT /api/settings/threads-credentials — save Threads API credentials
+  router.put('/threads-credentials', async (req, res, next) => {
+    try {
+      const { accessToken, userId } = req.body as {
+        accessToken?: string;
+        userId?: string;
+      };
+
+      if (!accessToken || !userId) {
+        res.status(400).json({
+          error: {
+            code: 'MISSING_CREDENTIALS',
+            message: 'Both access token and user ID are required',
+          },
+        });
+        return;
+      }
+
+      await threadsPublishing.saveCredentials({ accessToken, userId });
+      const hasThreadsCredentials = await threadsPublishing.hasCredentials();
+      res.json({ data: { hasThreadsCredentials } });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // POST /api/settings/validate-threads — validate Threads API credentials
+  router.post('/validate-threads', async (req, res, next) => {
+    try {
+      const { accessToken, userId } = req.body as {
+        accessToken?: string;
+        userId?: string;
+      };
+
+      const creds = accessToken && userId ? { accessToken, userId } : undefined;
+
+      const result = await threadsPublishing.validateCredentials(creds);
       res.json({ data: result });
     } catch (err) {
       next(err);

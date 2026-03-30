@@ -50,6 +50,8 @@ export class SettingsService {
     delete all['x_api_secret'];
     delete all['x_access_token'];
     delete all['x_access_token_secret'];
+    delete all['threads_access_token'];
+    delete all['threads_user_id'];
     return all;
   }
 }

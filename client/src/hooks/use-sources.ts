@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiGet, apiPost, apiPut, apiDelete } from '../lib/api-client';
+import { type Draft } from './use-drafts';
 
 export interface Source {
   id: number;
@@ -17,6 +18,7 @@ export interface Source {
   targeted_questions: string | null;
   targeted_answers: string | null;
   angles: string | null;
+  drafts?: Draft[];
   created_at: number;
   updated_at: number;
 }
@@ -87,8 +89,15 @@ export function useGenerateAngles() {
 export function useUpdateSource() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ sourceId, title }: { sourceId: number; title: string }) =>
-      apiPut<Source>(`/sources/${sourceId}`, { title }),
+    mutationFn: ({
+      sourceId,
+      title,
+      opinion,
+    }: {
+      sourceId: number;
+      title?: string;
+      opinion?: string;
+    }) => apiPut<Source>(`/sources/${sourceId}`, { title, opinion }),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['source', String(variables.sourceId)] });
       queryClient.invalidateQueries({ queryKey: ['sources'] });

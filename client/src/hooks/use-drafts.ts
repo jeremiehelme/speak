@@ -12,6 +12,7 @@ export interface Draft {
   published_url: string | null;
   published_at: number | null;
   scheduled_at: number | null;
+  platform: string | null;
   created_at: number;
   updated_at: number;
 }
@@ -42,6 +43,16 @@ export function usePublishDraft() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (draftId: number) => apiPost<Draft>(`/drafts/${draftId}/publish`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['source'] });
+    },
+  });
+}
+
+export function usePublishDraftToThreads() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (draftId: number) => apiPost<Draft>(`/drafts/${draftId}/publish-threads`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['source'] });
     },
@@ -101,6 +112,17 @@ export function useRegenerateDraft() {
       feedback?: string;
       angle?: string;
     }) => apiPost<Draft>(`/drafts/${draftId}/regenerate`, { feedback, angle }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['source'] });
+    },
+  });
+}
+
+export function useAdaptDraft() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ draftId, targetPlatform }: { draftId: number; targetPlatform: string }) =>
+      apiPost<Draft>(`/drafts/${draftId}/adapt`, { targetPlatform }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['source'] });
     },

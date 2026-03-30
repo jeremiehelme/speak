@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import DraftEditor from '../components/DraftEditor';
 import {
   useSource,
   useGenerateAngles,
@@ -14,7 +15,9 @@ import {
   useUpdateDraft,
   useRegenerateDraft,
   usePublishDraft,
+  usePublishDraftToThreads,
   useScheduleDraft,
+  useAdaptDraft,
   useTranslateDraft,
   type Draft,
 } from '../hooks/use-drafts';
@@ -29,6 +32,8 @@ function SourceDetailPage() {
   const updateDraft = useUpdateDraft();
   const regenerateDraft = useRegenerateDraft();
   const publishDraft = usePublishDraft();
+  const publishDraftToThreads = usePublishDraftToThreads();
+  const adaptDraft = useAdaptDraft();
   const scheduleDraft = useScheduleDraft();
   const translateDraft = useTranslateDraft();
   const deleteSource = useDeleteSource();
@@ -36,6 +41,7 @@ function SourceDetailPage() {
   const saveAnswers = useSaveAnswers();
   const updateSource = useUpdateSource();
   const { data: settings } = useSettings();
+  const maxCharLimit = settings?.maxCharLimit ?? 280;
   const [editingTitle, setEditingTitle] = useState(false);
 
   const [angles, setAngles] = useState<Angle[]>([]);
@@ -235,13 +241,6 @@ function SourceDetailPage() {
         </a>
       )}
 
-      {source.opinion && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <p className="text-sm font-medium text-yellow-800">Your take:</p>
-          <p className="text-sm text-yellow-700">{source.opinion}</p>
-        </div>
-      )}
-
       {/* Analysis Section */}
       {source.analysis_status === 'complete' ? (
         <section className="bg-white rounded-lg shadow p-6 space-y-4">
@@ -338,14 +337,32 @@ function SourceDetailPage() {
         </section>
       )}
 
-      {/* Targeted Questions Section */}
-      {selectedAngle && targetedQuestions.length > 0 && (
+      {/* Your Perspective Section */}
+      {source.analysis_status === 'complete' && (
         <section className="bg-white rounded-lg shadow p-6 space-y-4">
           <h2 className="text-lg font-semibold text-gray-900">Your Perspective</h2>
           <p className="text-xs text-gray-500">
-            Answer these questions to make your draft more authentic. Answers are optional.
+            Share your take and answer questions to make your draft more authentic. All fields are
+            optional.
           </p>
           <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                What's your take on this article?
+              </label>
+              <textarea
+                defaultValue={source.opinion || ''}
+                onBlur={(e) => {
+                  const value = e.target.value.trim();
+                  if (value !== (source.opinion || '')) {
+                    updateSource.mutate({ sourceId: source.id, opinion: value });
+                  }
+                }}
+                rows={2}
+                placeholder="Your opinion on this article..."
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+              />
+            </div>
             {targetedQuestions.map((question, i) => (
               <div key={i}>
                 <label className="block text-sm font-medium text-gray-700 mb-1">{question}</label>
@@ -377,17 +394,12 @@ function SourceDetailPage() {
       {draft && (
         <section className="bg-white rounded-lg shadow p-6 space-y-4">
           <h2 className="text-lg font-semibold text-gray-900">Draft</h2>
-          <textarea
-            value={draftContent}
-            onChange={(e) => setDraftContent(e.target.value)}
-            rows={4}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-          />
+          <DraftEditor content={draftContent} onUpdate={setDraftContent} />
           <div className="flex items-center justify-between">
             <span
-              className={`text-xs ${draftContent.length > 280 ? 'text-red-600 font-semibold' : 'text-gray-400'}`}
+              className={`text-xs ${draftContent.length > maxCharLimit ? 'text-red-600 font-semibold' : 'text-gray-400'}`}
             >
-              {draftContent.length}/280
+              {draftContent.length}/{maxCharLimit}
             </span>
             <div className="flex items-center gap-1">
               <select
@@ -440,7 +452,7 @@ function SourceDetailPage() {
                 rel="noopener noreferrer"
                 className="px-4 py-2 bg-green-600 text-white rounded-md text-sm hover:bg-green-700 inline-flex items-center gap-1"
               >
-                Published — View on X
+                Published — View on {draft.published_url.includes('threads.net') ? 'Threads' : 'X'}
               </a>
             ) : settings?.hasXCredentials ? (
               <button
@@ -470,6 +482,30 @@ function SourceDetailPage() {
               </span>
             )}
 
+            {draft?.published_status !== 'published' && settings?.hasThreadsCredentials && (
+              <button
+                onClick={async () => {
+                  if (!draft) return;
+                  try {
+                    await updateDraft.mutateAsync({ draftId: draft.id, content: draftContent });
+                    const result = await publishDraftToThreads.mutateAsync(draft.id);
+                    setDraft(result);
+                  } catch {
+                    // error is surfaced by mutation state
+                  }
+                }}
+                disabled={
+                  publishDraftToThreads.isPending ||
+                  !draft ||
+                  draftContent.length > 500 ||
+                  !draftContent
+                }
+                className="px-4 py-2 bg-gray-900 text-white rounded-md text-sm hover:bg-gray-700 disabled:opacity-50"
+              >
+                {publishDraftToThreads.isPending ? 'Publishing...' : 'Publish to Threads'}
+              </button>
+            )}
+
             {draft?.published_status !== 'published' && draft?.published_status !== 'queued' && (
               <button
                 onClick={async () => {
@@ -483,17 +519,56 @@ function SourceDetailPage() {
                   }
                 }}
                 disabled={
-                  scheduleDraft.isPending || !draft || draftContent.length > 280 || !draftContent
+                  scheduleDraft.isPending ||
+                  !draft ||
+                  draftContent.length > maxCharLimit ||
+                  !draftContent
                 }
                 className="px-4 py-2 bg-purple-600 text-white rounded-md text-sm hover:bg-purple-700 disabled:opacity-50"
               >
                 {scheduleDraft.isPending ? 'Scheduling...' : 'Schedule'}
               </button>
             )}
+            {draft && draftContent && (
+              <select
+                onChange={async (e) => {
+                  const platform = e.target.value;
+                  if (!platform || !draft) return;
+                  e.target.value = '';
+                  try {
+                    await updateDraft.mutateAsync({ draftId: draft.id, content: draftContent });
+                    const adapted = await adaptDraft.mutateAsync({
+                      draftId: draft.id,
+                      targetPlatform: platform,
+                    });
+                    setDraft(adapted);
+                    setDraftContent(adapted.content || '');
+                  } catch {
+                    // error surfaced by mutation state
+                  }
+                }}
+                disabled={adaptDraft.isPending || !draft}
+                className="px-2 py-2 border border-gray-300 rounded-md text-sm text-gray-600"
+                defaultValue=""
+              >
+                <option value="" disabled>
+                  {adaptDraft.isPending ? 'Adapting...' : 'Adapt to...'}
+                </option>
+                <option value="x">X (280 chars)</option>
+                <option value="threads">Threads (500 chars)</option>
+              </select>
+            )}
           </div>
           {draft?.published_status === 'queued' && draft?.scheduled_at && (
             <p className="text-sm text-purple-600">
               Scheduled for {new Date(draft.scheduled_at * 1000).toLocaleString()}
+            </p>
+          )}
+          {publishDraftToThreads.isError && (
+            <p className="text-sm text-red-600">
+              {publishDraftToThreads.error instanceof Error
+                ? publishDraftToThreads.error.message
+                : 'Failed to publish to Threads'}
             </p>
           )}
           {publishDraft.isError && (

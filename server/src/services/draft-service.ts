@@ -35,7 +35,12 @@ export class DraftService {
     }
   }
 
-  async generateDraft(sourceId: number, angle: string, llmProvider: LlmProvider): Promise<Draft> {
+  async generateDraft(
+    sourceId: number,
+    angle: string,
+    llmProvider: LlmProvider,
+    maxLength: number = 280,
+  ): Promise<Draft> {
     const source = await this.db
       .selectFrom('sources')
       .selectAll()
@@ -65,6 +70,7 @@ export class DraftService {
       generalOpinions: voiceContext.generalOpinions,
       articleOpinion: voiceContext.articleOpinion,
       targetedQA: targetedQASection,
+      maxLength: String(maxLength),
     });
 
     const response = await llmProvider.complete({
@@ -91,6 +97,7 @@ export class DraftService {
     feedback: string | null,
     newAngle: string | null,
     llmProvider: LlmProvider,
+    maxLength: number = 280,
   ): Promise<Draft> {
     const existing = await this.db
       .selectFrom('drafts')
@@ -130,6 +137,7 @@ export class DraftService {
       generalOpinions: voiceContext.generalOpinions,
       articleOpinion: voiceContext.articleOpinion,
       targetedQA: targetedQASection,
+      maxLength: String(maxLength),
     });
 
     if (feedback) {
@@ -159,6 +167,54 @@ export class DraftService {
       .selectFrom('drafts')
       .selectAll()
       .where('id', '=', draftId)
+      .executeTakeFirstOrThrow();
+  }
+
+  async adaptDraft(
+    draftId: number,
+    targetPlatform: string,
+    llmProvider: LlmProvider,
+  ): Promise<Draft> {
+    const existing = await this.db
+      .selectFrom('drafts')
+      .selectAll()
+      .where('id', '=', draftId)
+      .executeTakeFirst();
+
+    if (!existing) throw new Error('Draft not found');
+    if (!existing.content) throw new Error('Draft has no content to adapt');
+
+    const charLimits: Record<string, number> = { x: 280, threads: 500 };
+    const limit = charLimits[targetPlatform];
+    if (!limit) throw new Error(`Unknown platform: ${targetPlatform}`);
+
+    const draftingModel = (await this.settingsService.get('drafting_model')) || 'claude-sonnet-4-6';
+
+    const response = await llmProvider.complete({
+      model: draftingModel,
+      system:
+        'You are a social media content adapter. Rewrite posts for different platforms while preserving the core message, tone, and voice. Never truncate — always rewrite intelligently. Return ONLY the adapted post text, nothing else.',
+      messages: [
+        {
+          role: 'user',
+          content: `Adapt the following post for ${targetPlatform} (max ${limit} characters). The adapted version should feel native to the platform, not like a shortened copy.\n\nOriginal post:\n${existing.content}`,
+        },
+      ],
+      maxTokens: 1024,
+    });
+
+    const adaptedContent = response.content.trim();
+
+    return await this.db
+      .insertInto('drafts')
+      .values({
+        source_id: existing.source_id,
+        angle: existing.angle,
+        content: adaptedContent,
+        status: 'draft',
+        platform: targetPlatform,
+      })
+      .returningAll()
       .executeTakeFirstOrThrow();
   }
 
