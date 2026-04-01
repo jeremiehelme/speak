@@ -23,6 +23,30 @@ import {
 } from '../hooks/use-drafts';
 import { useSettings } from '../hooks/use-settings';
 
+/* ------------------------------------------------------------------ */
+/* Small reusable Win2K primitives                                     */
+/* ------------------------------------------------------------------ */
+
+function WinPanel({ title, icon, children }: { title: string; icon?: string; children: React.ReactNode }) {
+  return (
+    <div className="win-window" style={{ marginBottom: 10 }}>
+      <div className="win-titlebar">
+        {icon && <span>{icon}</span>}
+        <span>{title}</span>
+      </div>
+      <div style={{ padding: '8px 10px', background: '#d4d0c8' }}>{children}</div>
+    </div>
+  );
+}
+
+function WinLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ fontWeight: 'bold', fontSize: 11, marginBottom: 3 }}>{children}</div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+
 function SourceDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -92,37 +116,43 @@ function SourceDetailPage() {
     }
   }, [source?.targeted_questions, source?.targeted_answers]);
 
-  if (isLoading) return <div className="text-gray-500">Loading source...</div>;
-  if (error) return <div className="text-red-600">Error: {(error as Error).message}</div>;
-  if (!source) return <div className="text-gray-500">Source not found</div>;
+  if (isLoading) {
+    return (
+      <div className="win-info-box" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span>⌛</span> Loading source...
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className="win-error-box">
+        ❌ Error: {(error as Error).message}
+      </div>
+    );
+  }
+  if (!source) {
+    return <div className="win-info-box">Source not found.</div>;
+  }
 
   let themes: string[] = [];
   try {
     themes = source.themes ? (JSON.parse(source.themes) as string[]) : [];
-  } catch {
-    /* ignore */
-  }
+  } catch { /* ignore */ }
   let takeaways: string[] = [];
   try {
     takeaways = source.takeaways ? (JSON.parse(source.takeaways) as string[]) : [];
-  } catch {
-    /* ignore */
-  }
+  } catch { /* ignore */ }
   let targetedQuestions: string[] = [];
   try {
     targetedQuestions = source.targeted_questions
       ? (JSON.parse(source.targeted_questions) as string[])
       : [];
-  } catch {
-    /* ignore */
-  }
+  } catch { /* ignore */ }
 
   const handleGenerateAngles = async (count: number) => {
     const result = await generateAngles.mutateAsync({ sourceId: source.id, count });
     setAngles(result);
-    if (result.length === 1) {
-      setSelectedAngle(result[0]!.title);
-    }
+    if (result.length === 1) setSelectedAngle(result[0]!.title);
   };
 
   const handleGenerateDraft = async () => {
@@ -141,9 +171,7 @@ function SourceDetailPage() {
   };
 
   const handleCopy = async () => {
-    if (draft) {
-      await updateDraft.mutateAsync({ draftId: draft.id, content: draftContent });
-    }
+    if (draft) await updateDraft.mutateAsync({ draftId: draft.id, content: draftContent });
     navigator.clipboard.writeText(draftContent);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -173,286 +201,296 @@ function SourceDetailPage() {
     saveAnswers.mutate({ sourceId: source.id, answers: updated });
   };
 
+  const charOverLimit = draftContent.length > maxCharLimit;
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        {editingTitle ? (
-          <input
-            autoFocus
-            defaultValue={source.title || ''}
-            onBlur={(e) => {
-              const newTitle = e.target.value.trim();
-              if (newTitle && newTitle !== source.title) {
-                updateSource.mutate({ sourceId: source.id, title: newTitle });
-              }
-              setEditingTitle(false);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
-              if (e.key === 'Escape') setEditingTitle(false);
-            }}
-            className="text-2xl font-bold text-gray-900 border-b-2 border-blue-500 outline-none bg-transparent w-full"
-          />
-        ) : (
-          <h1
-            onClick={() => setEditingTitle(true)}
-            className="text-2xl font-bold text-gray-900 cursor-pointer hover:text-blue-600"
-            title="Click to edit title"
+    <div style={{ fontFamily: '"Tahoma", "MS Sans Serif", Arial, sans-serif' }}>
+
+      {/* ── Title bar row ── */}
+      <div className="win-window" style={{ marginBottom: 10 }}>
+        <div className="win-titlebar">
+          <span>📄</span>
+          <span style={{ flex: 1 }}>Source Detail</span>
+        </div>
+        <div style={{ padding: '8px 10px', background: '#d4d0c8', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+          {editingTitle ? (
+            <input
+              autoFocus
+              defaultValue={source.title || ''}
+              onBlur={(e) => {
+                const newTitle = e.target.value.trim();
+                if (newTitle && newTitle !== source.title) {
+                  updateSource.mutate({ sourceId: source.id, title: newTitle });
+                }
+                setEditingTitle(false);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                if (e.key === 'Escape') setEditingTitle(false);
+              }}
+              className="win-input"
+              style={{ fontSize: 13, fontWeight: 'bold', flex: 1 }}
+            />
+          ) : (
+            <span
+              onClick={() => setEditingTitle(true)}
+              title="Click to edit title"
+              style={{ fontSize: 13, fontWeight: 'bold', cursor: 'pointer', flex: 1, textDecoration: 'underline dotted' }}
+            >
+              {source.title || 'Untitled Source'}
+            </span>
+          )}
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="win-button win-btn-danger"
           >
-            {source.title || 'Untitled Source'}
-          </h1>
-        )}
-        <button
-          onClick={() => setShowDeleteConfirm(true)}
-          className="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded-md"
-        >
-          Delete
-        </button>
+            🗑️ Delete
+          </button>
+        </div>
       </div>
 
+      {/* ── Delete confirm dialog ── */}
       {showDeleteConfirm && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-sm text-red-800">Delete this source and all its drafts?</p>
-          <div className="flex gap-2 mt-2">
-            <button
-              onClick={handleDelete}
-              className="px-3 py-1 bg-red-600 text-white rounded-md text-sm"
-            >
-              Confirm
-            </button>
-            <button
-              onClick={() => setShowDeleteConfirm(false)}
-              className="px-3 py-1 bg-gray-200 rounded-md text-sm"
-            >
-              Cancel
-            </button>
+        <div className="win-window" style={{ marginBottom: 10, maxWidth: 360 }}>
+          <div className="win-titlebar" style={{ background: 'linear-gradient(to right, #800000, #c04040)' }}>
+            <span>⚠️</span>
+            <span>Confirm Delete</span>
+          </div>
+          <div style={{ padding: '12px', background: '#d4d0c8' }}>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 12 }}>
+              <span style={{ fontSize: 28 }}>❓</span>
+              <p style={{ margin: 0, fontSize: 11 }}>
+                Delete this source and all its drafts? This action cannot be undone.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+              <button onClick={handleDelete} className="win-button win-btn-primary win-btn-danger">
+                Yes
+              </button>
+              <button onClick={() => setShowDeleteConfirm(false)} className="win-button win-btn-primary">
+                No
+              </button>
+            </div>
           </div>
         </div>
       )}
 
+      {/* ── Source URL ── */}
       {source.url && (
-        <a
-          href={source.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-blue-600 text-sm hover:underline"
-        >
-          {source.url}
-        </a>
+        <div style={{ marginBottom: 8, fontSize: 11 }}>
+          <span style={{ fontWeight: 'bold' }}>Address: </span>
+          <a href={source.url} target="_blank" rel="noopener noreferrer">
+            {source.url}
+          </a>
+        </div>
       )}
 
-      {/* Analysis Section */}
+      {/* ── Analysis Section ── */}
       {source.analysis_status === 'complete' ? (
-        <section className="bg-white rounded-lg shadow p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900">Analysis</h2>
-          <p className="text-sm text-gray-700">{source.analysis_summary}</p>
+        <WinPanel title="Analysis" icon="🔍">
+          <p style={{ margin: '0 0 8px', fontSize: 11 }}>{source.analysis_summary}</p>
+
           {themes.length > 0 && (
-            <div>
-              <span className="text-xs font-medium text-gray-500">Themes:</span>
-              <div className="flex gap-1 mt-1">
+            <div style={{ marginBottom: 8 }}>
+              <WinLabel>Themes:</WinLabel>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                 {themes.map((t: string) => (
-                  <span
-                    key={t}
-                    className="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full"
-                  >
-                    {t}
-                  </span>
+                  <span key={t} className="win-tag">{t}</span>
                 ))}
               </div>
             </div>
           )}
+
           {takeaways.length > 0 && (
-            <div>
-              <span className="text-xs font-medium text-gray-500">Key Takeaways:</span>
-              <ul className="list-disc list-inside text-sm text-gray-700 mt-1">
+            <div style={{ marginBottom: 8 }}>
+              <WinLabel>Key Takeaways:</WinLabel>
+              <ul style={{ margin: '2px 0 0 18px', padding: 0, fontSize: 11 }}>
                 {takeaways.map((t: string, i: number) => (
                   <li key={i}>{t}</li>
                 ))}
               </ul>
             </div>
           )}
-          {source.relevance && <p className="text-sm text-gray-600 italic">{source.relevance}</p>}
-          {source.category && (
-            <span className="inline-block px-2 py-0.5 bg-gray-100 text-gray-700 text-xs rounded-full">
-              {source.category}
-            </span>
+
+          {source.relevance && (
+            <p style={{ margin: '6px 0 0', fontSize: 11, fontStyle: 'italic' }}>{source.relevance}</p>
           )}
-        </section>
+          {source.category && (
+            <div style={{ marginTop: 6 }}>
+              <span className="win-tag">📁 {source.category}</span>
+            </div>
+          )}
+        </WinPanel>
       ) : source.analysis_status === 'pending' ? (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-700">
-          Analyzing article...
+        <div className="win-info-box" style={{ marginBottom: 10 }}>
+          ⌛ Analyzing article... please wait.
         </div>
       ) : (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700 flex items-center justify-between">
-          <span>Analysis failed. The source was saved but could not be analyzed.</span>
+        <div className="win-error-box" style={{ marginBottom: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+          <span>❌ Analysis failed. The source was saved but could not be analyzed.</span>
           <button
             onClick={() => retryAnalysis.mutate(source.id)}
             disabled={retryAnalysis.isPending}
-            className="px-3 py-1 bg-red-600 text-white rounded-md text-sm hover:bg-red-700 disabled:opacity-50"
+            className="win-button win-btn-danger"
           >
-            {retryAnalysis.isPending ? 'Retrying...' : 'Retry'}
+            {retryAnalysis.isPending ? '⌛ Retrying...' : '🔄 Retry'}
           </button>
         </div>
       )}
 
-      {/* Angle Generation */}
+      {/* ── Content Angles ── */}
       {source.analysis_status === 'complete' && (
-        <section className="bg-white rounded-lg shadow p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900">Content Angles</h2>
+        <WinPanel title="Content Angles" icon="📐">
           {angles.length === 0 ? (
             source.analysis_status === 'complete' && !source.angles ? (
-              <div className="text-sm text-blue-600">Generating angle...</div>
+              <div style={{ color: '#000080', fontSize: 11 }}>⌛ Generating angle...</div>
             ) : (
               <button
                 onClick={() => handleGenerateAngles(1)}
                 disabled={generateAngles.isPending}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 disabled:opacity-50"
+                className="win-button win-btn-primary"
               >
-                {generateAngles.isPending ? 'Generating...' : 'Generate Best Angle'}
+                {generateAngles.isPending ? '⌛ Generating...' : '✨ Generate Best Angle'}
               </button>
             )
           ) : (
-            <div className="space-y-2">
-              {angles.map((angle, i) => (
-                <div
-                  key={i}
-                  onClick={() => setSelectedAngle(angle.title)}
-                  className={`p-3 rounded-lg border cursor-pointer ${selectedAngle === angle.title ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}
-                >
-                  <p className="text-sm font-medium text-gray-900">{angle.title}</p>
-                  <p className="text-xs text-gray-600">{angle.description}</p>
-                </div>
-              ))}
+            <div>
+              {/* Win2K style listbox */}
+              <div className="win-sunken" style={{ marginBottom: 6 }}>
+                {angles.map((angle, i) => (
+                  <div
+                    key={i}
+                    onClick={() => setSelectedAngle(angle.title)}
+                    className={`win-listitem ${selectedAngle === angle.title ? 'selected' : ''}`}
+                  >
+                    <div style={{ fontWeight: 'bold', fontSize: 11 }}>
+                      {selectedAngle === angle.title ? '▶ ' : '  '}{angle.title}
+                    </div>
+                    <div style={{ fontSize: 10, paddingLeft: 14, color: selectedAngle === angle.title ? '#c0d8f0' : '#444' }}>
+                      {angle.description}
+                    </div>
+                  </div>
+                ))}
+              </div>
               {angles.length < 3 && (
                 <button
                   onClick={() => handleGenerateAngles(3)}
                   disabled={generateAngles.isPending}
-                  className="text-sm text-blue-600 hover:underline"
+                  className="win-button"
                 >
-                  Show alternatives
+                  Show alternatives...
                 </button>
               )}
             </div>
           )}
-        </section>
+        </WinPanel>
       )}
 
-      {/* Your Perspective Section */}
+      {/* ── Your Perspective ── */}
       {source.analysis_status === 'complete' && (
-        <section className="bg-white rounded-lg shadow p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900">Your Perspective</h2>
-          <p className="text-xs text-gray-500">
-            Share your take and answer questions to make your draft more authentic. All fields are
-            optional.
+        <WinPanel title="Your Perspective" icon="💬">
+          <p style={{ margin: '0 0 8px', fontSize: 10, color: '#444' }}>
+            Share your take and answer questions to make your draft more authentic. All fields are optional.
           </p>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                What's your take on this article?
-              </label>
-              <textarea
-                defaultValue={source.opinion || ''}
-                onBlur={(e) => {
-                  const value = e.target.value.trim();
-                  if (value !== (source.opinion || '')) {
-                    updateSource.mutate({ sourceId: source.id, opinion: value });
-                  }
-                }}
-                rows={2}
-                placeholder="Your opinion on this article..."
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+          <div>
+            <WinLabel>What&apos;s your take on this article?</WinLabel>
+            <textarea
+              defaultValue={source.opinion || ''}
+              onBlur={(e) => {
+                const value = e.target.value.trim();
+                if (value !== (source.opinion || '')) {
+                  updateSource.mutate({ sourceId: source.id, opinion: value });
+                }
+              }}
+              rows={3}
+              placeholder="Your opinion on this article..."
+              className="win-textarea"
+              style={{ marginBottom: 8 }}
+            />
+          </div>
+          {targetedQuestions.map((question, i) => (
+            <div key={i} style={{ marginBottom: 6 }}>
+              <WinLabel>{question}</WinLabel>
+              <input
+                type="text"
+                defaultValue={answers[i] || ''}
+                onBlur={(e) => handleAnswerBlur(i, e.target.value)}
+                placeholder="Your answer..."
+                className="win-input"
               />
             </div>
-            {targetedQuestions.map((question, i) => (
-              <div key={i}>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{question}</label>
-                <input
-                  type="text"
-                  defaultValue={answers[i] || ''}
-                  onBlur={(e) => handleAnswerBlur(i, e.target.value)}
-                  placeholder="Your answer..."
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-                />
-              </div>
-            ))}
-          </div>
-        </section>
+          ))}
+        </WinPanel>
       )}
 
-      {/* Generate Draft Button */}
+      {/* ── Generate Draft Button ── */}
       {selectedAngle && !draft && (
-        <button
-          onClick={handleGenerateDraft}
-          disabled={generateDraft.isPending}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 disabled:opacity-50"
-        >
-          {generateDraft.isPending ? 'Generating draft...' : 'Generate Draft'}
-        </button>
+        <div style={{ marginBottom: 10 }}>
+          <button
+            onClick={handleGenerateDraft}
+            disabled={generateDraft.isPending}
+            className="win-button win-btn-primary"
+          >
+            {generateDraft.isPending ? '⌛ Generating draft...' : '📝 Generate Draft'}
+          </button>
+        </div>
       )}
 
-      {/* Draft Section */}
+      {/* ── Draft Section ── */}
       {draft && (
-        <section className="bg-white rounded-lg shadow p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900">Draft</h2>
+        <WinPanel title="Draft" icon="📝">
           <DraftEditor content={draftContent} onUpdate={setDraftContent} />
-          <div className="flex items-center justify-between">
-            <span
-              className={`text-xs ${draftContent.length > maxCharLimit ? 'text-red-600 font-semibold' : 'text-gray-400'}`}
-            >
-              {draftContent.length}/{maxCharLimit}
+
+          {/* Char count */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 4, marginBottom: 8 }}>
+            <span style={{ fontSize: 10, color: charOverLimit ? '#800000' : '#444', fontWeight: charOverLimit ? 'bold' : 'normal' }}>
+              {charOverLimit ? '⚠️ ' : ''}{draftContent.length}/{maxCharLimit} characters
             </span>
-            <div className="flex items-center gap-1">
-              <select
-                onChange={async (e) => {
-                  const lang = e.target.value;
-                  if (!lang || !draft) return;
-                  e.target.value = '';
-                  try {
-                    const result = await translateDraft.mutateAsync({
-                      draftId: draft.id,
-                      language: lang,
-                    });
-                    setDraftContent(result.translated);
-                  } catch {
-                    // error surfaced by mutation state
-                  }
-                }}
-                disabled={translateDraft.isPending || !draft}
-                className="text-xs border border-gray-300 rounded px-2 py-1 text-gray-600"
-                defaultValue=""
-              >
-                <option value="" disabled>
-                  {translateDraft.isPending ? 'Translating...' : 'Translate to...'}
-                </option>
-                <option value="English">English</option>
-                <option value="French">French</option>
-                <option value="Spanish">Spanish</option>
-                <option value="German">German</option>
-              </select>
-            </div>
+            <select
+              onChange={async (e) => {
+                const lang = e.target.value;
+                if (!lang || !draft) return;
+                e.target.value = '';
+                try {
+                  const result = await translateDraft.mutateAsync({ draftId: draft.id, language: lang });
+                  setDraftContent(result.translated);
+                } catch { /* surfaced by mutation */ }
+              }}
+              disabled={translateDraft.isPending || !draft}
+              className="win-select"
+              style={{ width: 'auto', fontSize: 10 }}
+              defaultValue=""
+            >
+              <option value="" disabled>
+                {translateDraft.isPending ? '⌛ Translating...' : '🌐 Translate to...'}
+              </option>
+              <option value="English">English</option>
+              <option value="French">French</option>
+              <option value="Spanish">Spanish</option>
+              <option value="German">German</option>
+            </select>
           </div>
-          <div className="flex gap-2 flex-wrap">
-            <button
-              onClick={handleSaveDraft}
-              disabled={updateDraft.isPending}
-              className="px-4 py-2 bg-gray-600 text-white rounded-md text-sm hover:bg-gray-700 disabled:opacity-50"
-            >
-              {saved ? 'Saved!' : 'Save'}
+
+          <div className="win-divider" />
+
+          {/* Action buttons */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 6 }}>
+            <button onClick={handleSaveDraft} disabled={updateDraft.isPending} className="win-button">
+              {saved ? '✔ Saved!' : '💾 Save'}
             </button>
-            <button
-              onClick={handleCopy}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
-            >
-              {copied ? 'Copied!' : 'Copy to Clipboard'}
+            <button onClick={handleCopy} className="win-button">
+              {copied ? '✔ Copied!' : '📋 Copy'}
             </button>
+
             {draft?.published_status === 'published' && draft?.published_url ? (
               <a
                 href={draft.published_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-4 py-2 bg-green-600 text-white rounded-md text-sm hover:bg-green-700 inline-flex items-center gap-1"
+                className="win-button"
+                style={{ textDecoration: 'none', display: 'inline-block' }}
               >
-                Published — View on {draft.published_url.includes('threads.net') ? 'Threads' : 'X'}
+                ✔ Published — View on {draft.published_url.includes('threads.net') ? 'Threads' : 'X'}
               </a>
             ) : settings?.hasXCredentials ? (
               <button
@@ -462,24 +500,17 @@ function SourceDetailPage() {
                     await updateDraft.mutateAsync({ draftId: draft.id, content: draftContent });
                     const result = await publishDraft.mutateAsync(draft.id);
                     setDraft(result);
-                  } catch {
-                    // error is surfaced by mutation state
-                  }
+                  } catch { /* surfaced by mutation */ }
                 }}
-                disabled={
-                  publishDraft.isPending || !draft || draftContent.length > 280 || !draftContent
-                }
-                className="px-4 py-2 bg-black text-white rounded-md text-sm hover:bg-gray-800 disabled:opacity-50"
+                disabled={publishDraft.isPending || !draft || draftContent.length > 280 || !draftContent}
+                className="win-button"
               >
-                {publishDraft.isPending ? 'Publishing...' : 'Publish to X'}
+                {publishDraft.isPending ? '⌛ Publishing...' : '🐦 Publish to X'}
               </button>
             ) : (
-              <span
-                className="px-4 py-2 bg-gray-200 text-gray-500 rounded-md text-sm cursor-not-allowed"
-                title="Connect X account in Settings"
-              >
-                Publish to X
-              </span>
+              <button className="win-button" disabled title="Connect X account in Settings">
+                🐦 Publish to X
+              </button>
             )}
 
             {draft?.published_status !== 'published' && settings?.hasThreadsCredentials && (
@@ -490,19 +521,12 @@ function SourceDetailPage() {
                     await updateDraft.mutateAsync({ draftId: draft.id, content: draftContent });
                     const result = await publishDraftToThreads.mutateAsync(draft.id);
                     setDraft(result);
-                  } catch {
-                    // error is surfaced by mutation state
-                  }
+                  } catch { /* surfaced by mutation */ }
                 }}
-                disabled={
-                  publishDraftToThreads.isPending ||
-                  !draft ||
-                  draftContent.length > 500 ||
-                  !draftContent
-                }
-                className="px-4 py-2 bg-gray-900 text-white rounded-md text-sm hover:bg-gray-700 disabled:opacity-50"
+                disabled={publishDraftToThreads.isPending || !draft || draftContent.length > 500 || !draftContent}
+                className="win-button"
               >
-                {publishDraftToThreads.isPending ? 'Publishing...' : 'Publish to Threads'}
+                {publishDraftToThreads.isPending ? '⌛ Publishing...' : '🧵 Publish to Threads'}
               </button>
             )}
 
@@ -514,21 +538,15 @@ function SourceDetailPage() {
                     await updateDraft.mutateAsync({ draftId: draft.id, content: draftContent });
                     const result = await scheduleDraft.mutateAsync(draft.id);
                     setDraft(result);
-                  } catch {
-                    // error surfaced by mutation state
-                  }
+                  } catch { /* surfaced by mutation */ }
                 }}
-                disabled={
-                  scheduleDraft.isPending ||
-                  !draft ||
-                  draftContent.length > maxCharLimit ||
-                  !draftContent
-                }
-                className="px-4 py-2 bg-purple-600 text-white rounded-md text-sm hover:bg-purple-700 disabled:opacity-50"
+                disabled={scheduleDraft.isPending || !draft || draftContent.length > maxCharLimit || !draftContent}
+                className="win-button"
               >
-                {scheduleDraft.isPending ? 'Scheduling...' : 'Schedule'}
+                {scheduleDraft.isPending ? '⌛ Scheduling...' : '🕐 Schedule'}
               </button>
             )}
+
             {draft && draftContent && (
               <select
                 onChange={async (e) => {
@@ -537,72 +555,68 @@ function SourceDetailPage() {
                   e.target.value = '';
                   try {
                     await updateDraft.mutateAsync({ draftId: draft.id, content: draftContent });
-                    const adapted = await adaptDraft.mutateAsync({
-                      draftId: draft.id,
-                      targetPlatform: platform,
-                    });
+                    const adapted = await adaptDraft.mutateAsync({ draftId: draft.id, targetPlatform: platform });
                     setDraft(adapted);
                     setDraftContent(adapted.content || '');
-                  } catch {
-                    // error surfaced by mutation state
-                  }
+                  } catch { /* surfaced by mutation */ }
                 }}
                 disabled={adaptDraft.isPending || !draft}
-                className="px-2 py-2 border border-gray-300 rounded-md text-sm text-gray-600"
+                className="win-select"
+                style={{ width: 'auto', fontSize: 11 }}
                 defaultValue=""
               >
                 <option value="" disabled>
-                  {adaptDraft.isPending ? 'Adapting...' : 'Adapt to...'}
+                  {adaptDraft.isPending ? '⌛ Adapting...' : '🔧 Adapt to...'}
                 </option>
                 <option value="x">X (280 chars)</option>
                 <option value="threads">Threads (500 chars)</option>
               </select>
             )}
           </div>
+
           {draft?.published_status === 'queued' && draft?.scheduled_at && (
-            <p className="text-sm text-purple-600">
-              Scheduled for {new Date(draft.scheduled_at * 1000).toLocaleString()}
+            <p style={{ fontSize: 11, color: '#800080', marginTop: 6 }}>
+              🕐 Scheduled for {new Date(draft.scheduled_at * 1000).toLocaleString()}
             </p>
           )}
+
+          {/* Errors */}
           {publishDraftToThreads.isError && (
-            <p className="text-sm text-red-600">
-              {publishDraftToThreads.error instanceof Error
-                ? publishDraftToThreads.error.message
-                : 'Failed to publish to Threads'}
+            <p className="win-error-box" style={{ marginTop: 6 }}>
+              {publishDraftToThreads.error instanceof Error ? publishDraftToThreads.error.message : 'Failed to publish to Threads'}
             </p>
           )}
           {publishDraft.isError && (
-            <p className="text-sm text-red-600">
-              {publishDraft.error instanceof Error
-                ? publishDraft.error.message
-                : 'Failed to publish'}
+            <p className="win-error-box" style={{ marginTop: 6 }}>
+              {publishDraft.error instanceof Error ? publishDraft.error.message : 'Failed to publish'}
             </p>
           )}
           {scheduleDraft.isError && (
-            <p className="text-sm text-red-600">
-              {scheduleDraft.error instanceof Error
-                ? scheduleDraft.error.message
-                : 'Failed to schedule'}
+            <p className="win-error-box" style={{ marginTop: 6 }}>
+              {scheduleDraft.error instanceof Error ? scheduleDraft.error.message : 'Failed to schedule'}
             </p>
           )}
 
           {/* Regeneration */}
-          <div className="border-t pt-4 space-y-2">
+          <div className="win-divider" style={{ marginTop: 10 }} />
+          <div style={{ marginTop: 6 }}>
+            <WinLabel>Regeneration feedback:</WinLabel>
             <input
               value={feedback}
               onChange={(e) => setFeedback(e.target.value)}
-              placeholder="Feedback: too generic, more technical, shorter..."
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+              placeholder="e.g. too generic, more technical, shorter..."
+              className="win-input"
+              style={{ marginBottom: 6 }}
             />
             <button
               onClick={handleRegenerate}
               disabled={regenerateDraft.isPending}
-              className="px-4 py-2 bg-yellow-600 text-white rounded-md text-sm hover:bg-yellow-700 disabled:opacity-50"
+              className="win-button win-btn-primary"
             >
-              {regenerateDraft.isPending ? 'Regenerating...' : 'Regenerate'}
+              {regenerateDraft.isPending ? '⌛ Regenerating...' : '🔄 Regenerate'}
             </button>
           </div>
-        </section>
+        </WinPanel>
       )}
     </div>
   );

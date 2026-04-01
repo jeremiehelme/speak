@@ -40,33 +40,73 @@ export default function DraftEditor({ content, onUpdate }: DraftEditorProps) {
 
   return (
     <div>
-      <div className="flex gap-1 mb-1">
+      {/* Win2K toolbar for bold/italic */}
+      <div
+        style={{
+          display: 'flex',
+          gap: 2,
+          marginBottom: 4,
+          padding: '2px 4px',
+          background: '#d4d0c8',
+          borderTop: '1px solid #fff',
+          borderLeft: '1px solid #fff',
+          borderRight: '1px solid #404040',
+          borderBottom: '1px solid #404040',
+        }}
+      >
         <button
           type="button"
           onClick={() => editor?.chain().focus().toggleBold().run()}
-          className={`px-2 py-1 text-xs rounded border ${
-            editor?.isActive('bold')
-              ? 'bg-gray-800 text-white border-gray-800'
-              : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-100'
-          }`}
+          style={{
+            fontWeight: 'bold',
+            fontFamily: '"Tahoma", Arial, sans-serif',
+            fontSize: 11,
+            padding: '1px 6px',
+            cursor: 'pointer',
+            background: editor?.isActive('bold') ? '#a0a098' : '#d4d0c8',
+            borderTop: editor?.isActive('bold') ? '1px solid #404040' : '1px solid #fff',
+            borderLeft: editor?.isActive('bold') ? '1px solid #404040' : '1px solid #fff',
+            borderRight: editor?.isActive('bold') ? '1px solid #fff' : '1px solid #404040',
+            borderBottom: editor?.isActive('bold') ? '1px solid #fff' : '1px solid #404040',
+          }}
         >
           B
         </button>
         <button
           type="button"
           onClick={() => editor?.chain().focus().toggleItalic().run()}
-          className={`px-2 py-1 text-xs rounded border italic ${
-            editor?.isActive('italic')
-              ? 'bg-gray-800 text-white border-gray-800'
-              : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-100'
-          }`}
+          style={{
+            fontStyle: 'italic',
+            fontFamily: '"Tahoma", Arial, sans-serif',
+            fontSize: 11,
+            padding: '1px 6px',
+            cursor: 'pointer',
+            background: editor?.isActive('italic') ? '#a0a098' : '#d4d0c8',
+            borderTop: editor?.isActive('italic') ? '1px solid #404040' : '1px solid #fff',
+            borderLeft: editor?.isActive('italic') ? '1px solid #404040' : '1px solid #fff',
+            borderRight: editor?.isActive('italic') ? '1px solid #fff' : '1px solid #404040',
+            borderBottom: editor?.isActive('italic') ? '1px solid #fff' : '1px solid #404040',
+          }}
         >
           I
         </button>
       </div>
+
+      {/* Win2K sunken text area */}
       <EditorContent
         editor={editor}
-        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-[6rem] [&_.ProseMirror_p]:my-0"
+        className="win-editor"
+        style={{
+          background: '#ffffff',
+          borderTop: '2px solid #404040',
+          borderLeft: '2px solid #404040',
+          borderRight: '2px solid #ffffff',
+          borderBottom: '2px solid #ffffff',
+          padding: '4px',
+          minHeight: '6rem',
+          fontFamily: '"Courier New", monospace',
+          fontSize: 12,
+        }}
       />
     </div>
   );

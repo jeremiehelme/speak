@@ -52,34 +52,44 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <div className="min-h-screen bg-gray-50">
-          <nav className="bg-white shadow-sm border-b border-gray-200">
-            <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-              <a href="/" className="text-xl font-bold text-gray-900">
-                Speak
-              </a>
-              <div className="flex gap-4">
-                <a href="/" className="text-sm text-gray-600 hover:text-gray-900">
-                  Dashboard
-                </a>
-                <a href="/capture" className="text-sm text-gray-600 hover:text-gray-900">
-                  Capture
-                </a>
-                <a href="/queue" className="text-sm text-gray-600 hover:text-gray-900">
-                  Queue
-                </a>
-                <a href="/profile" className="text-sm text-gray-600 hover:text-gray-900">
-                  Profile
-                </a>
-                <a href="/settings" className="text-sm text-gray-600 hover:text-gray-900">
-                  Settings
-                </a>
-              </div>
+        <div style={{ minHeight: '100vh', background: '#008080', padding: '8px' }}>
+          {/* Desktop window */}
+          <div className="win-window" style={{ maxWidth: 900, margin: '0 auto' }}>
+            {/* Title bar */}
+            <div className="win-titlebar">
+              <span style={{ fontSize: 12 }}>🖥️</span>
+              <span style={{ flex: 1 }}>Speak — Microsoft Content Assistant 2000</span>
+              <span className="win-btn-min">_</span>
+              <span className="win-btn-max">□</span>
+              <span className="win-btn-close">✕</span>
             </div>
-          </nav>
-          <main className="max-w-5xl mx-auto px-4 py-6">
-            <AppRoutes />
-          </main>
+
+            {/* Menu bar */}
+            <div className="win-menubar">
+              <span style={{ fontWeight: 'bold', marginRight: 12, fontSize: 13 }}>Speak</span>
+              <div className="win-divider" style={{ width: 1, height: 16, margin: '0 4px', borderTop: 'none', borderLeft: '1px solid #808080', borderRight: '1px solid #fff' }} />
+              <a href="/" className="win-menubar-item">📋 Dashboard</a>
+              <a href="/capture" className="win-menubar-item">➕ Capture</a>
+              <a href="/queue" className="win-menubar-item">🕐 Queue</a>
+              <a href="/profile" className="win-menubar-item">👤 Profile</a>
+              <a href="/settings" className="win-menubar-item">⚙️ Settings</a>
+            </div>
+
+            {/* Toolbar separator */}
+            <div className="win-divider" style={{ margin: 0 }} />
+
+            {/* Content area */}
+            <div style={{ padding: '12px', background: '#d4d0c8', minHeight: '80vh' }}>
+              <AppRoutes />
+            </div>
+
+            {/* Status bar */}
+            <div className="win-statusbar">
+              <div className="win-statusbar-panel" style={{ flex: 1 }}>Ready</div>
+              <div className="win-statusbar-panel">speak.app</div>
+              <div className="win-statusbar-panel">🔒 Secure</div>
+            </div>
+          </div>
         </div>
       </BrowserRouter>
     </QueryClientProvider>
