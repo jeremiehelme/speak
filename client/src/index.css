@@ -1,1 +1,335 @@
 @import "tailwindcss";
+
+/* =========================================
+   Windows 2000 / Microsoft 2000 Theme
+   ========================================= */
+
+:root {
+  --win-bg: #d4d0c8;
+  --win-face: #d4d0c8;
+  --win-shadow: #808080;
+  --win-dark-shadow: #404040;
+  --win-light: #ffffff;
+  --win-highlight: #ececec;
+  --win-titlebar: #0a246a;
+  --win-titlebar-end: #a6caf0;
+  --win-titlebar-text: #ffffff;
+  --win-blue: #000080;
+  --win-link: #0000ff;
+  --win-text: #000000;
+  --win-input-bg: #ffffff;
+  --win-disabled: #808080;
+  --win-selected: #0a246a;
+  --win-selected-text: #ffffff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  background-color: var(--win-bg);
+  font-family: "Tahoma", "MS Sans Serif", Arial, sans-serif;
+  font-size: 11px;
+  color: var(--win-text);
+  margin: 0;
+  padding: 0;
+}
+
+/* ---- 3D Raised effect (standard Win2K panel) ---- */
+.win-raised {
+  background: var(--win-face);
+  border-top: 2px solid var(--win-light);
+  border-left: 2px solid var(--win-light);
+  border-right: 2px solid var(--win-dark-shadow);
+  border-bottom: 2px solid var(--win-dark-shadow);
+  box-shadow: 1px 1px 0 var(--win-shadow) inset;
+}
+
+/* ---- 3D Sunken effect (inputs, text areas) ---- */
+.win-sunken {
+  background: var(--win-input-bg);
+  border-top: 2px solid var(--win-dark-shadow);
+  border-left: 2px solid var(--win-dark-shadow);
+  border-right: 2px solid var(--win-light);
+  border-bottom: 2px solid var(--win-light);
+}
+
+/* ---- Window / Panel ---- */
+.win-window {
+  background: var(--win-face);
+  border-top: 2px solid var(--win-light);
+  border-left: 2px solid var(--win-light);
+  border-right: 2px solid var(--win-dark-shadow);
+  border-bottom: 2px solid var(--win-dark-shadow);
+  outline: 1px solid var(--win-shadow);
+}
+
+/* ---- Title bar ---- */
+.win-titlebar {
+  background: linear-gradient(to right, #0a246a, #a6caf0);
+  color: var(--win-titlebar-text);
+  font-weight: bold;
+  font-size: 12px;
+  padding: 3px 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  user-select: none;
+}
+
+.win-titlebar-icon {
+  width: 14px;
+  height: 14px;
+}
+
+/* ---- Window controls ---- */
+.win-btn-close, .win-btn-min, .win-btn-max {
+  width: 16px;
+  height: 14px;
+  font-size: 9px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 2px;
+  background: var(--win-face);
+  border-top: 1px solid var(--win-light);
+  border-left: 1px solid var(--win-light);
+  border-right: 1px solid var(--win-dark-shadow);
+  border-bottom: 1px solid var(--win-dark-shadow);
+  cursor: pointer;
+  font-weight: bold;
+  color: var(--win-text);
+  flex-shrink: 0;
+}
+
+/* ---- Standard button ---- */
+.win-button {
+  background: var(--win-face);
+  border-top: 2px solid var(--win-light);
+  border-left: 2px solid var(--win-light);
+  border-right: 2px solid var(--win-dark-shadow);
+  border-bottom: 2px solid var(--win-dark-shadow);
+  padding: 3px 12px;
+  font-family: "Tahoma", "MS Sans Serif", Arial, sans-serif;
+  font-size: 11px;
+  color: var(--win-text);
+  cursor: pointer;
+  min-width: 75px;
+  outline: none;
+  white-space: nowrap;
+}
+
+.win-button:active:not(:disabled) {
+  border-top: 2px solid var(--win-dark-shadow);
+  border-left: 2px solid var(--win-dark-shadow);
+  border-right: 2px solid var(--win-light);
+  border-bottom: 2px solid var(--win-light);
+  padding: 4px 11px 2px 13px;
+}
+
+.win-button:focus {
+  outline: 1px dotted var(--win-text);
+  outline-offset: -3px;
+}
+
+.win-button:disabled {
+  color: var(--win-disabled);
+  cursor: default;
+}
+
+.win-button.win-btn-primary {
+  font-weight: bold;
+  border: 2px solid var(--win-text);
+}
+
+.win-button.win-btn-danger {
+  color: #800000;
+}
+
+.win-button.win-btn-blue {
+  background: var(--win-blue);
+  color: white;
+  font-weight: bold;
+  border-top: 2px solid #4040c0;
+  border-left: 2px solid #4040c0;
+  border-right: 2px solid #000040;
+  border-bottom: 2px solid #000040;
+}
+
+/* ---- Text inputs / textareas ---- */
+.win-input, .win-textarea, .win-select {
+  background: var(--win-input-bg);
+  border-top: 2px solid var(--win-dark-shadow);
+  border-left: 2px solid var(--win-dark-shadow);
+  border-right: 2px solid var(--win-highlight);
+  border-bottom: 2px solid var(--win-highlight);
+  padding: 2px 4px;
+  font-family: "Tahoma", "MS Sans Serif", Arial, sans-serif;
+  font-size: 11px;
+  color: var(--win-text);
+  outline: none;
+  width: 100%;
+}
+
+.win-input:focus, .win-textarea:focus, .win-select:focus {
+  outline: 1px solid var(--win-selected);
+}
+
+.win-textarea {
+  resize: vertical;
+}
+
+/* ---- Group box / fieldset ---- */
+.win-groupbox {
+  border: 1px solid var(--win-shadow);
+  border-top: none;
+  position: relative;
+  padding: 12px 8px 8px;
+  margin-top: 8px;
+}
+
+.win-groupbox-label {
+  position: absolute;
+  top: -7px;
+  left: 8px;
+  background: var(--win-face);
+  padding: 0 3px;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+/* ---- Tag / badge ---- */
+.win-tag {
+  display: inline-block;
+  background: var(--win-blue);
+  color: white;
+  font-size: 10px;
+  padding: 1px 6px;
+  margin-right: 2px;
+  border-top: 1px solid #4040c0;
+  border-left: 1px solid #4040c0;
+  border-right: 1px solid #000040;
+  border-bottom: 1px solid #000040;
+}
+
+/* ---- Statusbar ---- */
+.win-statusbar {
+  background: var(--win-face);
+  border-top: 1px solid var(--win-shadow);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 4px;
+  font-size: 10px;
+}
+
+.win-statusbar-panel {
+  border-top: 1px solid var(--win-shadow);
+  border-left: 1px solid var(--win-shadow);
+  border-right: 1px solid var(--win-light);
+  border-bottom: 1px solid var(--win-light);
+  padding: 1px 4px;
+}
+
+/* ---- Navbar / Menubar ---- */
+.win-menubar {
+  background: var(--win-face);
+  border-bottom: 2px solid var(--win-dark-shadow);
+  border-top: 2px solid var(--win-light);
+  display: flex;
+  align-items: center;
+  padding: 2px 8px;
+  gap: 0;
+}
+
+.win-menubar-item {
+  padding: 3px 8px;
+  font-size: 11px;
+  cursor: pointer;
+  color: var(--win-text);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.win-menubar-item:hover {
+  background: var(--win-selected);
+  color: var(--win-selected-text);
+}
+
+/* ---- List items / selectable rows ---- */
+.win-listitem {
+  padding: 3px 6px;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.win-listitem:hover {
+  background: #c0d8f0;
+  border: 1px dotted var(--win-blue);
+}
+
+.win-listitem.selected {
+  background: var(--win-selected);
+  color: var(--win-selected-text);
+}
+
+/* ---- Divider ---- */
+.win-divider {
+  height: 0;
+  border-top: 1px solid var(--win-shadow);
+  border-bottom: 1px solid var(--win-light);
+  margin: 4px 0;
+}
+
+/* ---- Link style ---- */
+a {
+  color: var(--win-link);
+  text-decoration: underline;
+}
+
+/* ---- Scrollbars (best effort) ---- */
+::-webkit-scrollbar {
+  width: 16px;
+  height: 16px;
+}
+::-webkit-scrollbar-track {
+  background: var(--win-bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--win-face);
+  border-top: 1px solid var(--win-light);
+  border-left: 1px solid var(--win-light);
+  border-right: 1px solid var(--win-dark-shadow);
+  border-bottom: 1px solid var(--win-dark-shadow);
+}
+
+/* ---- Info / Warning / Error boxes ---- */
+.win-info-box {
+  background: #ffffe1;
+  border: 1px solid #808000;
+  padding: 4px 8px;
+  font-size: 11px;
+}
+
+.win-error-box {
+  background: #fff0f0;
+  border: 1px solid #800000;
+  padding: 4px 8px;
+  font-size: 11px;
+  color: #800000;
+}
+
+/* ---- Tiptap editor ---- */
+.win-editor .ProseMirror {
+  outline: none;
+  min-height: 5rem;
+  font-family: "Courier New", monospace;
+  font-size: 12px;
+  padding: 2px;
+}
+
+.win-editor .ProseMirror p {
+  margin: 0;
+}
