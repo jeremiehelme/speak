@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { readFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { createHmac } from 'crypto';
 
 interface User {
   username: string;
@@ -26,11 +27,38 @@ function loadUsers(): User[] {
   return [];
 }
 
-// Simple in-memory session store
-const sessions = new Map<string, { username: string; expiresAt: number }>();
+function getSecret(): string {
+  return process.env.AUTH_SECRET || 'speak-dev-secret';
+}
 
-function generateSessionId(): string {
-  return Math.random().toString(36).slice(2) + Date.now().toString(36);
+function createToken(username: string): string {
+  const expiresAt = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+  const payload = `${username}:${expiresAt}`;
+  const sig = createHmac('sha256', getSecret()).update(payload).digest('hex');
+  return Buffer.from(`${payload}:${sig}`).toString('base64');
+}
+
+export function verifyToken(token: string): { username: string } | null {
+  try {
+    const decoded = Buffer.from(token, 'base64').toString();
+    const parts = decoded.split(':');
+    if (parts.length !== 3) return null;
+
+    const [username, expiresAtStr, sig] = parts;
+    const expiresAt = Number(expiresAtStr);
+
+    if (Date.now() > expiresAt) return null;
+
+    const expectedSig = createHmac('sha256', getSecret())
+      .update(`${username}:${expiresAtStr}`)
+      .digest('hex');
+
+    if (sig !== expectedSig) return null;
+
+    return { username };
+  } catch {
+    return null;
+  }
 }
 
 export function createAuthRouter() {
@@ -52,35 +80,25 @@ export function createAuthRouter() {
       return;
     }
 
-    const sessionId = generateSessionId();
-    const expiresAt = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
-    sessions.set(sessionId, { username: user.username, expiresAt });
-
+    const sessionId = createToken(user.username);
     res.json({ data: { sessionId, username: user.username } });
   });
 
-  router.post('/logout', (req, res) => {
-    const sessionId = req.headers['x-session-id'] as string;
-    if (sessionId) {
-      sessions.delete(sessionId);
-    }
+  router.post('/logout', (_req, res) => {
     res.json({ data: { ok: true } });
   });
 
   router.get('/me', (req, res) => {
-    const sessionId = req.headers['x-session-id'] as string;
-    const session = sessionId ? sessions.get(sessionId) : undefined;
+    const token = req.headers['x-session-id'] as string;
+    const result = token ? verifyToken(token) : null;
 
-    if (!session || session.expiresAt < Date.now()) {
-      if (session) sessions.delete(sessionId);
+    if (!result) {
       res.status(401).json({ error: { message: 'Not authenticated' } });
       return;
     }
 
-    res.json({ data: { username: session.username } });
+    res.json({ data: { username: result.username } });
   });
 
   return router;
 }
-
-export { sessions };

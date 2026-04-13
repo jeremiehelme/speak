@@ -1,12 +1,11 @@
 import type { Request, Response, NextFunction } from 'express';
-import { sessions } from '../routes/auth-route.js';
+import { verifyToken } from '../routes/auth-route.js';
 
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
-  const sessionId = req.headers['x-session-id'] as string;
-  const session = sessionId ? sessions.get(sessionId) : undefined;
+  const token = req.headers['x-session-id'] as string;
+  const result = token ? verifyToken(token) : null;
 
-  if (!session || session.expiresAt < Date.now()) {
-    if (session) sessions.delete(sessionId);
+  if (!result) {
     res.status(401).json({ error: { message: 'Not authenticated' } });
     return;
   }
