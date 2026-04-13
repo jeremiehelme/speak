@@ -5,14 +5,18 @@ function getSessionHeaders(): Record<string, string> {
   return sessionId ? { 'x-session-id': sessionId } : {};
 }
 
+function handleUnauthorized() {
+  localStorage.removeItem('sessionId');
+  window.dispatchEvent(new Event('auth-expired'));
+}
+
 export async function apiGet<T>(path: string): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
     headers: { ...getSessionHeaders() },
   });
   if (!res.ok) {
     if (res.status === 401) {
-      localStorage.removeItem('sessionId');
-      window.location.href = '/login';
+      handleUnauthorized();
       throw new Error('Session expired');
     }
     const body = await res.json().catch(() => ({}));
@@ -30,8 +34,7 @@ export async function apiPost<T>(path: string, body?: unknown): Promise<T> {
   });
   if (!res.ok) {
     if (res.status === 401) {
-      localStorage.removeItem('sessionId');
-      window.location.href = '/login';
+      handleUnauthorized();
       throw new Error('Session expired');
     }
     const json = await res.json().catch(() => ({}));
@@ -49,8 +52,7 @@ export async function apiPut<T>(path: string, body?: unknown): Promise<T> {
   });
   if (!res.ok) {
     if (res.status === 401) {
-      localStorage.removeItem('sessionId');
-      window.location.href = '/login';
+      handleUnauthorized();
       throw new Error('Session expired');
     }
     const json = await res.json().catch(() => ({}));
@@ -67,8 +69,7 @@ export async function apiDelete(path: string): Promise<void> {
   });
   if (!res.ok) {
     if (res.status === 401) {
-      localStorage.removeItem('sessionId');
-      window.location.href = '/login';
+      handleUnauthorized();
       throw new Error('Session expired');
     }
     const json = await res.json().catch(() => ({}));

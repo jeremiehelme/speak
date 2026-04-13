@@ -1,4 +1,4 @@
-import { useState, useSyncExternalStore } from 'react';
+import { useState, useEffect, useSyncExternalStore } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useSettings } from './hooks/use-settings';
@@ -100,6 +100,15 @@ function subscribeToStorage(callback: () => void) {
 function App() {
   const hasSession = useSyncExternalStore(subscribeToStorage, getSessionSnapshot);
   const [forceAuth, setForceAuth] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const handler = () => {
+      setForceAuth(false);
+      queryClient.clear();
+    };
+    window.addEventListener('auth-expired', handler);
+    return () => window.removeEventListener('auth-expired', handler);
+  }, []);
 
   const authenticated = forceAuth ?? hasSession;
 
