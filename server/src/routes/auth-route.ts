@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { readFileSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -9,10 +9,21 @@ interface User {
 }
 
 function loadUsers(): User[] {
+  // Prefer AUTH_USERS env var (required on Vercel, optional locally)
+  const envUsers = process.env.AUTH_USERS;
+  if (envUsers) {
+    return JSON.parse(envUsers) as User[];
+  }
+
+  // Fall back to local file for dev
   const __dirname = dirname(fileURLToPath(import.meta.url));
   const usersPath = join(__dirname, '..', '..', '..', 'data', 'users.json');
-  const raw = readFileSync(usersPath, 'utf-8');
-  return JSON.parse(raw) as User[];
+  if (existsSync(usersPath)) {
+    const raw = readFileSync(usersPath, 'utf-8');
+    return JSON.parse(raw) as User[];
+  }
+
+  return [];
 }
 
 // Simple in-memory session store
