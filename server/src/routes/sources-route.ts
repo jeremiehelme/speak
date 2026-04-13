@@ -4,6 +4,7 @@ import type { Database } from '../db/types.js';
 import { AnalysisService } from '../services/analysis-service.js';
 import { SettingsService } from '../services/settings-service.js';
 import { createLlmProvider } from '../llm/index.js';
+import { extractArticle } from '../services/extraction-service.js';
 
 export function createSourcesRouter(db: Kysely<Database>): Router {
   const router = Router();
@@ -87,12 +88,37 @@ export function createSourcesRouter(db: Kysely<Database>): Router {
         return;
       }
 
-      // Reset status to pending
-      await db
-        .updateTable('sources')
-        .set({ analysis_status: 'pending', updated_at: Math.floor(Date.now() / 1000) })
-        .where('id', '=', id)
-        .execute();
+      // Re-extract content if missing and URL is available
+      if (!source.extracted_content && !source.raw_text && source.url) {
+        try {
+          const result = await extractArticle(source.url);
+          await db
+            .updateTable('sources')
+            .set({
+              title: result.title,
+              extracted_content: result.content,
+              analysis_status: 'pending',
+              updated_at: Math.floor(Date.now() / 1000),
+            })
+            .where('id', '=', id)
+            .execute();
+        } catch (err) {
+          res.status(400).json({
+            error: {
+              code: 'EXTRACTION_FAILED',
+              message: `Could not extract content: ${(err as Error).message}`,
+            },
+          });
+          return;
+        }
+      } else {
+        // Reset status to pending
+        await db
+          .updateTable('sources')
+          .set({ analysis_status: 'pending', updated_at: Math.floor(Date.now() / 1000) })
+          .where('id', '=', id)
+          .execute();
+      }
 
       res.json({ data: { ...source, analysis_status: 'pending' } });
 
