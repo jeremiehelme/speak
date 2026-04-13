@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import { initDatabase } from './db/database.js';
 import { errorHandler } from './middleware/error-handler.js';
+import { requireAuth } from './middleware/auth-session.js';
+import { createAuthRouter } from './routes/auth-route.js';
 import { createSettingsRouter } from './routes/settings-route.js';
 import { createProfileRouter } from './routes/profile-route.js';
 import { createCaptureRouter } from './routes/capture-route.js';
@@ -20,7 +22,13 @@ export async function createApp() {
     res.json({ data: { status: 'ok' } });
   });
 
+  // Auth routes (public)
+  app.use('/api/auth', createAuthRouter());
+
   const db = await initDatabase();
+
+  // Protect all routes below with session auth
+  app.use('/api', requireAuth);
 
   // Mount routes
   app.use('/api/settings', createSettingsRouter(db));
